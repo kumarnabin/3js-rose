@@ -44,8 +44,8 @@ const UP = new THREE.Vector3(0, 1, 0);
 
 try {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#18251a');
-  scene.fog = new THREE.FogExp2('#18251a', 0.035);
+  scene.background = new THREE.Color('#c9d2bd');
+  scene.fog = new THREE.FogExp2('#c9d2bd', 0.03);
 
   const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 0.3, 100);
   const HOME_POS = new THREE.Vector3(0.45, 2.85, 5.0);
@@ -532,6 +532,14 @@ try {
     leaf.rotation.set(0, -az, 0.52 - i * 0.04);
     leaf.userData.base = leaf.rotation.clone();
     leaf.userData.phase = i * 1.9;
+    leaf.userData.targetScale = n.scale;
+    leaf.userData.leafDelay = i * 0.055;
+    leaf.userData.home = leaf.position.clone();
+    leaf.userData.relDir = new THREE.Vector3(Math.cos(az) * rr(0.12, 0.4), 0, Math.sin(az) * rr(0.12, 0.4));
+    leaf.userData.rise = rr(0.2, 0.5);
+    leaf.userData.spin = rr(0.8, 2.4) * (rand() < 0.5 ? -1 : 1);
+    leaf.userData.spin2 = rr(0.6, 2.0) * (rand() < 0.5 ? -1 : 1);
+    leaf.userData.relDelay = rr(0, 1.1);
     plant.add(leaf);
     leafAnimated.push(leaf);
   });
@@ -568,6 +576,7 @@ try {
   head.add(bloom);
 
   // ----- sepals: five, tapering, reflexed under the open flower, two with fringed edges -----
+  const sepalNodes = [];
   for (let i = 0; i < 5; i++) {
     const az = i * ((Math.PI * 2) / 5) + 0.3;
     const len = rr(0.4, 0.5);
@@ -589,10 +598,21 @@ try {
     const yw = new THREE.Vector3(0, Math.cos(phi), 0).addScaledVector(r, Math.sin(phi));
     const zw = r.clone().multiplyScalar(-Math.cos(phi)); zw.y += Math.sin(phi);
     const xw = new THREE.Vector3().crossVectors(yw, zw);
-    m.quaternion.copy(basisQuat(xw, yw, zw));
+    const openQ = basisQuat(xw, yw, zw);
+
+    // bud state: sepals wrapped up around the closed flower
+    const phiC = 0.32;
+    const ywC = new THREE.Vector3(0, Math.cos(phiC), 0).addScaledVector(r, Math.sin(phiC));
+    const zwC = r.clone().multiplyScalar(-Math.cos(phiC)); zwC.y += Math.sin(phiC);
+    const xwC = new THREE.Vector3().crossVectors(ywC, zwC);
+    const closedQ = basisQuat(xwC, ywC, zwC);
+
+    m.quaternion.copy(openQ);
     m.position.copy(r).multiplyScalar(0.115); m.position.y = -0.075;
     m.castShadow = true; m.receiveShadow = true;
+    m.userData = { open: openQ, closed: closedQ, delay: 0.05 + i * 0.03 };
     bloom.add(m);
+    sepalNodes.push(m);
   }
 
   // ----- petals on a golden-angle spiral -----
@@ -667,14 +687,35 @@ try {
     const yw = new THREE.Vector3(0, Math.cos(phi), 0).addScaledVector(rhat, Math.sin(phi));
     const zw = rhat.clone().multiplyScalar(-Math.cos(phi)); zw.y += Math.sin(phi);     // faces the flower axis
     const xw = new THREE.Vector3().crossVectors(yw, zw);
+    const openQ = basisQuat(xw, yw, zw);
 
+    // bud state: every petal stands nearly upright, wrapped around the flower axis
+    const phiC = 0.03 + 0.045 * s;
+    const ywC = new THREE.Vector3(0, Math.cos(phiC), 0).addScaledVector(rhat, Math.sin(phiC));
+    const zwC = rhat.clone().multiplyScalar(-Math.cos(phiC)); zwC.y += Math.sin(phiC);
+    const xwC = new THREE.Vector3().crossVectors(ywC, zwC);
+    const closedQ = basisQuat(xwC, ywC, zwC);
+
+    const twist = new THREE.Quaternion().setFromAxisAngle(UP, rr(-0.07, 0.07));  // small twist
     const pivot = new THREE.Group();
     pivot.position.set(rhat.x * r0, y0, rhat.z * r0);
-    pivot.quaternion.copy(basisQuat(xw, yw, zw));
-    pivot.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(UP, rr(-0.07, 0.07)));  // small twist
+    pivot.quaternion.copy(openQ).multiply(twist);
+    closedQ.multiply(twist);
     const mesh = createPetal(s);
     pivot.add(mesh);
-    pivot.userData = { base: pivot.quaternion.clone(), phase: ang * 1.7 + i, amp: 0.006 + 0.02 * s };
+    pivot.userData = {
+      base: openQ.clone().multiply(twist),
+      closed: closedQ,
+      phase: ang * 1.7 + i,
+      amp: 0.006 + 0.02 * s,
+      delay: (1 - s) * 0.42,           // outer petals peel back first
+      home: pivot.position.clone(),
+      relDir: new THREE.Vector3(rhat.x * rr(0.1, 0.42), 0, rhat.z * rr(0.1, 0.42)),
+      rise: rr(0.45, 0.85),
+      spinAxis: new THREE.Vector3(rr(-1, 1), rr(-1, 1), rr(-1, 1)).normalize(),
+      spinSpeed: rr(1.8, 5.5) * (rand() < 0.5 ? -1 : 1),
+      relDelay: rr(0, 0.9)
+    };
     bloom.add(pivot);
     petalNodes.push({ pivot, mesh, s });
   }
@@ -715,7 +756,7 @@ try {
   // =========================================================
   //  POT, GROUND, MOTES
   // =========================================================
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: '#1b281a', roughness: 0.96 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: '#7c8a68', roughness: 0.96 }));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.06;
   ground.receiveShadow = true;
@@ -761,6 +802,17 @@ try {
     controls.update();
   });
 
+  // ----- lifecycle: seedling -> leafing stem -> tight bud -> open bloom -> release -> repeat -----
+  const GROW_DURATION = 7.4;
+  const HOLD_DURATION = 2.6;
+  const RELEASE_DURATION = 6.2;
+  const BARE_DURATION = 0.7;
+  const CYCLE_DURATION = GROW_DURATION + HOLD_DURATION + RELEASE_DURATION + BARE_DURATION;
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+  let lifeTime = 0;
+  const growthButton = document.querySelector('#growth-replay');
+  growthButton.addEventListener('click', () => { lifeTime = 0; });
+
   // optional camera presets via URL: ?view=top | side | close | full  (add &still to pause the breeze)
   const params = new URLSearchParams(location.search);
   const view = params.get('view');
@@ -777,27 +829,86 @@ try {
 
 
   const clock = new THREE.Clock();
-  const tmpE = new THREE.Euler(), tmpQ = new THREE.Quaternion();
+  const tmpE = new THREE.Euler(), tmpQ = new THREE.Quaternion(), tmpQ2 = new THREE.Quaternion();
   let rafId = 0;
 
   function animate() {
     rafId = requestAnimationFrame(animate);
-    const t = clock.getElapsedTime();
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.elapsedTime;
     const wind = breezeEnabled ? 1 : 0;
+
+    // lifecycle clock: grow, hold the bloom, release petals/leaves, bare pause, repeat
+    lifeTime = (lifeTime + dt) % CYCLE_DURATION;
+    const growth = clamp01(lifeTime / GROW_DURATION);
+    const releaseTime = clamp01((lifeTime - GROW_DURATION - HOLD_DURATION) / RELEASE_DURATION) * RELEASE_DURATION;
+    const releasing = lifeTime > GROW_DURATION + HOLD_DURATION;
+    const plantEase = easeOutCubic(smoothstep(0.0, 0.62, growth));
+    const flowerOpen = smoothstep(0.46, 0.95, growth);
+    plant.scale.setScalar(lerp(0.14, 1, plantEase));
+    growthButton.style.opacity = growth < 0.999 ? '0.55' : '1';
 
     plant.rotation.z = wind * (Math.sin(t * 0.72) * 0.016 + Math.sin(t * 1.23 + 1.4) * 0.006);
     plant.rotation.x = wind * Math.sin(t * 0.56) * 0.008;
     bloom.rotation.z = wind * Math.sin(t * 0.92 + 0.7) * 0.012;
     bloom.rotation.x = wind * Math.sin(t * 0.68) * 0.008;
 
-    for (const { pivot } of petalNodes) {
+    for (const { pivot, mesh } of petalNodes) {
       const d = pivot.userData;
-      tmpE.set(wind * Math.sin(t * 0.84 + d.phase) * d.amp, 0, wind * Math.sin(t * 1.1 + d.phase) * d.amp * 0.7);
-      pivot.quaternion.copy(d.base).multiply(tmpQ.setFromEuler(tmpE));
+      if (releasing) {
+        const rt = Math.max(0, releaseTime - d.relDelay);
+        const lr = clamp01(rt / Math.max(0.001, RELEASE_DURATION - d.relDelay));
+        const fade = 1 - smoothstep(0.4, 0.95, lr);
+        const flyY = d.rise * rt - 0.3 * rt * rt;
+        pivot.position.set(
+          d.home.x + d.relDir.x * rt + Math.sin(t * 1.9 + d.phase) * 0.03 * rt,
+          d.home.y + flyY,
+          d.home.z + d.relDir.z * rt + Math.cos(t * 1.6 + d.phase) * 0.03 * rt
+        );
+        tmpQ.copy(d.base);
+        tmpQ2.setFromAxisAngle(d.spinAxis, rt * d.spinSpeed);
+        pivot.quaternion.copy(tmpQ).multiply(tmpQ2);
+        mesh.scale.setScalar(fade);
+      } else {
+        const local = easeOutCubic(clamp01((flowerOpen - d.delay) / (1 - d.delay)));
+        tmpQ.copy(d.closed).slerp(d.base, local);
+        mesh.scale.setScalar(lerp(0.42, 1, local));
+        tmpE.set(wind * Math.sin(t * 0.84 + d.phase) * d.amp, 0, wind * Math.sin(t * 1.1 + d.phase) * d.amp * 0.7);
+        tmpQ2.setFromEuler(tmpE);
+        pivot.position.copy(d.home);
+        pivot.quaternion.copy(tmpQ).multiply(tmpQ2);
+      }
+    }
+    for (const sepal of sepalNodes) {
+      const d = sepal.userData;
+      const local = easeOutCubic(clamp01((flowerOpen - d.delay) / (1 - d.delay)));
+      tmpQ.copy(d.closed).slerp(d.open, local);
+      sepal.quaternion.copy(tmpQ);
     }
     for (const leaf of leafAnimated) {
-      const b = leaf.userData.base, ph = leaf.userData.phase;
-      leaf.rotation.set(b.x + wind * Math.sin(t * 0.9 + ph) * 0.02, b.y + wind * Math.sin(t * 0.7 + ph) * 0.03, b.z + wind * Math.sin(t * 1.05 + ph) * 0.045);
+      const b = leaf.userData.base, ph = leaf.userData.phase, u = leaf.userData;
+      if (releasing) {
+        const rt = Math.max(0, releaseTime - u.relDelay);
+        const lr = clamp01(rt / Math.max(0.001, RELEASE_DURATION - u.relDelay));
+        const fade = 1 - smoothstep(0.35, 0.95, lr);
+        const flyY = u.rise * rt - 0.25 * rt * rt;
+        leaf.position.set(
+          u.home.x + u.relDir.x * rt + Math.sin(t * 1.8 + ph) * 0.025 * rt,
+          u.home.y + flyY,
+          u.home.z + u.relDir.z * rt + Math.cos(t * 1.5 + ph) * 0.025 * rt
+        );
+        leaf.rotation.set(
+          b.x + rt * u.spin + Math.sin(t * 2.1 + ph) * 0.35 * rt,
+          b.y + rt * u.spin2,
+          b.z + Math.cos(t * 1.7 + ph) * 0.45 * rt
+        );
+        leaf.scale.setScalar(u.targetScale * fade);
+      } else {
+        const lp = easeOutCubic(clamp01((growth - 0.08 - u.leafDelay) / 0.42));
+        leaf.position.copy(u.home);
+        leaf.scale.setScalar(u.targetScale * lerp(0.06, 1, lp));
+        leaf.rotation.set(b.x + wind * Math.sin(t * 0.9 + ph) * 0.02, b.y + wind * Math.sin(t * 0.7 + ph) * 0.03, b.z + wind * Math.sin(t * 1.05 + ph) * 0.045);
+      }
     }
 
     const pos = motes.geometry.attributes.position;
