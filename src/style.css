@@ -3,13 +3,13 @@
 :root {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
-  --bg-deep: #070e08;
+  --bg-deep: #122115;
   --text-main: #f4f5f0;
   --text-dim: #a4b0a0;
   --accent-green: #90c768;
   --accent-crimson: #c71f3e;
-  --glass-bg: rgba(14, 22, 16, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(18, 30, 20, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.14);
   --glass-blur: blur(18px);
 }
 
@@ -33,7 +33,7 @@ html, body, #app {
 #app {
   position: relative;
   isolation: isolate;
-  background: radial-gradient(circle at 50% 40%, #152718 0%, #0c180e 45%, #050a06 100%);
+  background: radial-gradient(circle at 50% 35%, #25422a 0%, #162c1a 45%, #0c180e 100%);
 }
 
 canvas {

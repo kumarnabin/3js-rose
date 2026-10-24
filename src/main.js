@@ -4,15 +4,17 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import './style.css';
 
 /*
-  Hyper-Realistic Botanical Rose Study
-  Modeled after high-end horticultural photography (rose1.jpg)
-  - True double-curved petals with reflexed margins, pointed beaks, and velvety papillae
-  - Quilted, serrated, waxy-coriaceous compound leaves with sunken midribs and interveinal cushions
-  - 5-whorl bloom architecture: spiral core whorl, high-centered cone, reflexed mid cup, flared skirt, guard petals
-  - Multi-stage branching plant (Tight bud -> Opening bud -> Half bloom -> Full splendor bloom)
-  - Physical velvet & waxy clearcoat materials with subsurface transmission
-  - Interactive physics: Pull & Push spring bounce, Click dew splash, Shake, Gravity sag, Wind turbulence
-  - Real-time color switcher (8 curated presets + custom color picker)
+  Senior Botanical 3D Artist & Three.js Implementation:
+  Photorealistic Living Rose (Hybrid Tea Rose - Rosa x hybrida)
+
+  1. Naturally curved, double-cupped petals with reflexed margins and apical beaks.
+  2. Botanical Fibonacci phyllotaxis across 5 concentric morphological whorls.
+  3. Soft velvety papillae shading: restrained specularity, zero plastic shine, physical velvet sheen.
+  4. True 3D quilted, serrated compound leaves: sunken midrib, raised interveinal cushions, zero chrome/metallic sheen.
+  5. Tapered organic stems, hooked prickles, swollen receptacles (hips), and pinnatifid green sepals.
+  6. Closed and opening rosebuds with tightly wrapped spiral cones.
+  7. Outdoor botanical sunlight & soft hemisphere illumination (no dark void).
+  8. Natural compound breeze animation with hierarchical stiffness and phase offsets.
 */
 
 const app = document.querySelector('#app');
@@ -29,7 +31,7 @@ function showToast(msg) {
 }
 
 // -------------------------------------------------------------
-//  Math & RNG Utilities
+//  Math & Botanical Utilities
 // -------------------------------------------------------------
 function mulberry32(a) {
   return function () {
@@ -39,7 +41,7 @@ function mulberry32(a) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const rand = mulberry32(10242026);
+const rand = mulberry32(20261024);
 const rr = (a, b) => a + (b - a) * rand();
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
@@ -61,104 +63,104 @@ function basisQuat(x, y, z) {
 }
 
 // -------------------------------------------------------------
-//  Palettes & Dynamic Textures (matching rose1.jpg)
+//  Botanical Color Palettes (Soft Natural Rose Pigments)
 // -------------------------------------------------------------
 const PALETTES = {
   crimson: {
-    name: 'Velvet Crimson',
-    claw: '#1c0104',
-    shadow: '#5a0412',
-    mid: '#8c0922',
-    body: '#b30e2f',
-    rim: '#d8153b',
-    highlight: '#ef2a52',
-    sheen: '#ff2854',
-    emissive: '#360209',
-    roughness: 0.38
+    name: 'Classic Velvet Crimson',
+    claw: '#2a0308',
+    shadow: '#5e0716',
+    mid: '#8f0a24',
+    body: '#b50d2e',
+    rim: '#d1153a',
+    highlight: '#e32448',
+    sheen: '#ff2d55',
+    emissive: '#38020a',
+    roughness: 0.68
   },
   burgundy: {
-    name: 'Royal Burgundy',
-    claw: '#0c0003',
-    shadow: '#280108',
-    mid: '#46030f',
-    body: '#630516',
-    rim: '#80081d',
-    highlight: '#a41029',
-    sheen: '#be1032',
-    emissive: '#1a0105',
-    roughness: 0.42
+    name: 'Royal Black Baccara',
+    claw: '#140004',
+    shadow: '#30010a',
+    mid: '#4e0312',
+    body: '#690518',
+    rim: '#840820',
+    highlight: '#a8102b',
+    sheen: '#b81232',
+    emissive: '#1e0106',
+    roughness: 0.70
   },
   pink: {
-    name: 'Blush Pink',
-    claw: '#380c18',
-    shadow: '#6e1f35',
-    mid: '#ab3a58',
-    body: '#d8597c',
-    rim: '#f485a3',
-    highlight: '#ffb3c7',
+    name: 'Blush Heritage Pink',
+    claw: '#3a121e',
+    shadow: '#78263e',
+    mid: '#b03d5c',
+    body: '#d85e7e',
+    rim: '#ee839f',
+    highlight: '#ffb5c7',
     sheen: '#ff8ca8',
-    emissive: '#330814',
-    roughness: 0.38
+    emissive: '#380c18',
+    roughness: 0.65
   },
   ivory: {
-    name: 'Pure Ivory',
-    claw: '#342c1c',
-    shadow: '#63573e',
-    mid: '#9c8d6e',
-    body: '#c9bda5',
-    rim: '#f2eae0',
-    highlight: '#ffffff',
-    sheen: '#fffaee',
-    emissive: '#262013',
-    roughness: 0.44
+    name: 'Cream Garden Ivory',
+    claw: '#362f22',
+    shadow: '#6b5e48',
+    mid: '#a39376',
+    body: '#cfc3ab',
+    rim: '#ede4d5',
+    highlight: '#fdfaf2',
+    sheen: '#fffcf5',
+    emissive: '#2b2318',
+    roughness: 0.68
   },
   peach: {
-    name: 'Sunset Peach',
-    claw: '#320701',
-    shadow: '#6e1a0b',
-    mid: '#b03b1d',
-    body: '#e05e36',
-    rim: '#f88764',
-    highlight: '#ffb69b',
+    name: 'Sunset Coral Peach',
+    claw: '#380e04',
+    shadow: '#782210',
+    mid: '#b84222',
+    body: '#e0653d',
+    rim: '#f58b68',
+    highlight: '#ffb699',
     sheen: '#ff8a6b',
-    emissive: '#330a03',
-    roughness: 0.39
+    emissive: '#380f05',
+    roughness: 0.66
   },
   yellow: {
-    name: 'Golden Sun',
-    claw: '#321c00',
-    shadow: '#663c00',
-    mid: '#a36800',
-    body: '#d99400',
-    rim: '#f7bd18',
-    highlight: '#ffe66e',
+    name: 'Golden Sun Amber',
+    claw: '#362000',
+    shadow: '#6e4400',
+    mid: '#a87000',
+    body: '#d69400',
+    rim: '#f2b516',
+    highlight: '#ffdf66',
     sheen: '#ffd447',
-    emissive: '#331f00',
-    roughness: 0.40
+    emissive: '#3b2500',
+    roughness: 0.67
   },
   lavender: {
-    name: 'Royal Lilac',
-    claw: '#180624',
-    shadow: '#38144e',
-    mid: '#622b82',
-    body: '#8f46b5',
-    rim: '#b86fe0',
-    highlight: '#dfa6ff',
+    name: 'Royal Lilac Rose',
+    claw: '#220a2e',
+    shadow: '#44195c',
+    mid: '#6f328f',
+    body: '#9b4fc4',
+    rim: '#bd72ea',
+    highlight: '#e2aaff',
     sheen: '#ca80f8',
-    emissive: '#1d052a',
-    roughness: 0.38
+    emissive: '#240833',
+    roughness: 0.65
   },
   black: {
-    name: 'Midnight Obsidian',
-    claw: '#060305',
-    shadow: '#120a10',
-    mid: '#1d121a',
-    body: '#2b1c27',
-    rim: '#422e3d',
-    highlight: '#5e4658',
+    name: 'Midnight Velvet',
+    claw: '#0c070b',
+    shadow: '#180e16',
+    mid: '#271723',
+    body: '#362231',
+    rim: '#4a3244',
+    highlight: '#6b4e64',
     sheen: '#734b67',
-    emissive: '#0b060a',
-    roughness: 0.48
+    emissive: '#0e070c',
+    roughness: 0.72
   }
 };
 
@@ -166,18 +168,19 @@ let currentPalette = PALETTES.crimson;
 
 try {
   // -----------------------------------------------------------
-  //  Three.js Scene Setup & Lighting (matching rose1.jpg)
+  //  Three.js Setup: Outdoor Botanical Scene & Composition
   // -----------------------------------------------------------
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#070e08');
-  scene.fog = new THREE.FogExp2('#070e08', 0.028);
+  // Natural garden environment background: soft out-of-focus garden foliage (no dark void!)
+  scene.background = new THREE.Color('#142417');
+  scene.fog = new THREE.FogExp2('#142417', 0.024);
 
-  const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.2, 100);
+  const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 0.2, 100);
   const CAM_PRESETS = {
-    hero: { pos: new THREE.Vector3(0.5, 2.7, 4.6), target: new THREE.Vector3(0.06, 2.4, 0.0) },
-    closeup: { pos: new THREE.Vector3(0.28, 2.82, 2.05), target: new THREE.Vector3(0.1, 2.72, 0.04) },
-    top: { pos: new THREE.Vector3(0.08, 5.2, 0.7), target: new THREE.Vector3(0.1, 2.6, 0.0) },
-    full: { pos: new THREE.Vector3(0.65, 2.1, 7.8), target: new THREE.Vector3(0.08, 1.65, 0.0) }
+    hero: { pos: new THREE.Vector3(0.55, 2.7, 4.6), target: new THREE.Vector3(0.08, 2.38, 0.0) },
+    closeup: { pos: new THREE.Vector3(0.26, 2.78, 1.95), target: new THREE.Vector3(0.1, 2.68, 0.04) },
+    top: { pos: new THREE.Vector3(0.06, 5.0, 0.8), target: new THREE.Vector3(0.1, 2.55, 0.0) },
+    full: { pos: new THREE.Vector3(0.7, 2.1, 7.6), target: new THREE.Vector3(0.08, 1.6, 0.0) }
   };
   camera.position.copy(CAM_PRESETS.hero.pos);
 
@@ -188,7 +191,7 @@ try {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  renderer.toneMappingExposure = 1.02;
   app.prepend(renderer.domElement);
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
 
@@ -196,48 +199,54 @@ try {
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.minDistance = 1.1;
-  controls.maxDistance = 15;
-  controls.maxPolarAngle = Math.PI * 0.85;
+  controls.maxDistance = 14;
+  controls.maxPolarAngle = Math.PI * 0.84;
   controls.target.copy(CAM_PRESETS.hero.target);
   controls.update();
 
-  // Environment & Studio Lighting (recreating the dark cinematic studio look of rose1.jpg)
+  // -----------------------------------------------------------
+  //  Outdoor Botanical Lighting Setup
+  //  Soft natural sunlight, sky hemisphere, leafy ground bounce (zero harsh chrome/plastic reflections)
+  // -----------------------------------------------------------
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.6;
+  scene.environmentIntensity = 0.35; // subtle natural ambient reflections only
 
-  const hemiLight = new THREE.HemisphereLight('#c0dcb2', '#1a2216', 0.75);
+  // Natural Sky & Earth Hemisphere Light
+  const hemiLight = new THREE.HemisphereLight('#dbeefc', '#2c3a23', 0.85);
   scene.add(hemiLight);
 
-  // Key light: Warm soft directional light illuminating upper petals
-  const keyLight = new THREE.DirectionalLight('#fff1e0', 3.8);
-  keyLight.position.set(-3.4, 7.5, 4.6);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(2048, 2048);
-  Object.assign(keyLight.shadow.camera, { left: -3.2, right: 3.2, top: 4.4, bottom: -3.2, near: 1, far: 24 });
-  keyLight.shadow.bias = -0.0003;
-  keyLight.shadow.normalBias = 0.012;
-  keyLight.shadow.radius = 2.4;
-  scene.add(keyLight);
+  // Soft Warm Natural Sunlight (Directional Light with soft PCF penumbra)
+  const sunLight = new THREE.DirectionalLight('#fff5e3', 2.8);
+  sunLight.position.set(-3.6, 7.8, 4.4);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.set(2048, 2048);
+  Object.assign(sunLight.shadow.camera, { left: -3.2, right: 3.2, top: 4.4, bottom: -3.2, near: 1, far: 24 });
+  sunLight.shadow.bias = -0.0003;
+  sunLight.shadow.normalBias = 0.015;
+  sunLight.shadow.radius = 2.8;
+  scene.add(sunLight);
 
-  // Rim light: Cool blue-white back-rim light picking up translucent petal silhouettes
-  const rimLight = new THREE.DirectionalLight('#b0cfff', 2.0);
-  rimLight.position.set(4.8, 5.0, -4.6);
-  scene.add(rimLight);
+  // Soft Sky Backlight (Subtle rim light picking up translucent petal margins)
+  const skyRimLight = new THREE.DirectionalLight('#b8d6f8', 1.2);
+  skyRimLight.position.set(4.2, 4.6, -4.2);
+  scene.add(skyRimLight);
 
-  // Warm fill: Soft amber bounce light illuminating inner petal folds
-  const softFill = new THREE.PointLight('#ff7054', 1.4, 10);
-  softFill.position.set(1.2, 3.2, 2.5);
-  scene.add(softFill);
+  // Warm leafy under-canopy bounce
+  const leafBounce = new THREE.PointLight('#426b34', 0.9, 8);
+  leafBounce.position.set(-0.4, 0.6, 0.8);
+  scene.add(leafBounce);
 
-  // Bottom bounce: Deep forest green ground bounce on lower stem & calyx
-  const bottomBounce = new THREE.PointLight('#2b5424', 0.9, 7);
-  bottomBounce.position.set(-0.6, 0.5, 0.8);
-  scene.add(bottomBounce);
+  // Warm floral self-fill light (illuminates inner petal hollows softly)
+  const petalFill = new THREE.PointLight('#ff705a', 0.8, 7);
+  petalFill.position.set(0.9, 3.2, 2.2);
+  scene.add(petalFill);
 
   // -----------------------------------------------------------
-  //  High-Definition Procedural Textures (1024 x 2048)
+  //  Procedural Textures: Velvet Petal & Botanical Leaf
   // -----------------------------------------------------------
+
+  // 1. Petal Diffuse Map (Organic Velvet Gradient & Fine Micro-Veins)
   const petalCanvas = document.createElement('canvas');
   petalCanvas.width = 1024;
   petalCanvas.height = 2048;
@@ -248,32 +257,32 @@ try {
 
   function renderPetalCanvas(pal) {
     const w = 1024, h = 2048;
-    // Base vertical gradient
+    // Deep botanical crimson gradient
     const g = petalCtx.createLinearGradient(0, h, 0, 0);
     g.addColorStop(0.0, pal.claw);
-    g.addColorStop(0.08, pal.shadow);
-    g.addColorStop(0.24, pal.mid);
-    g.addColorStop(0.55, pal.body);
-    g.addColorStop(0.85, pal.rim);
+    g.addColorStop(0.09, pal.shadow);
+    g.addColorStop(0.28, pal.mid);
+    g.addColorStop(0.62, pal.body);
+    g.addColorStop(0.88, pal.rim);
     g.addColorStop(1.0, pal.highlight);
     petalCtx.fillStyle = g;
     petalCtx.fillRect(0, 0, w, h);
 
-    // Silky luminous outer borders (scattering at grazing margins)
+    // Soft velvety edge translucency (slightly lighter pinkish-crimson margin)
     const eg = petalCtx.createLinearGradient(0, 0, w, 0);
-    eg.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
-    eg.addColorStop(0.12, 'rgba(255, 255, 255, 0)');
-    eg.addColorStop(0.88, 'rgba(255, 255, 255, 0)');
-    eg.addColorStop(1.0, 'rgba(255, 255, 255, 0.22)');
+    eg.addColorStop(0.0, 'rgba(255, 140, 160, 0.16)');
+    eg.addColorStop(0.12, 'rgba(255, 140, 160, 0)');
+    eg.addColorStop(0.88, 'rgba(255, 140, 160, 0)');
+    eg.addColorStop(1.0, 'rgba(255, 140, 160, 0.16)');
     petalCtx.fillStyle = eg;
     petalCtx.fillRect(0, 0, w, h);
 
-    // Micro-pigment cellular stippling (the natural velvet papillae of rose petals)
-    for (let i = 0; i < 3200; i++) {
-      const x = Math.random() * w, y = Math.random() * h, r = 8 + Math.random() * 45;
+    // Micro-pigment papillae (breaks specular shine and gives true organic depth)
+    for (let i = 0; i < 2800; i++) {
+      const x = Math.random() * w, y = Math.random() * h, r = 8 + Math.random() * 38;
       const rg = petalCtx.createRadialGradient(x, y, 0, x, y, r);
       const isDark = Math.random() < 0.52;
-      rg.addColorStop(0, isDark ? 'rgba(15, 0, 8, 0.045)' : 'rgba(255, 255, 255, 0.04)');
+      rg.addColorStop(0, isDark ? 'rgba(20, 0, 8, 0.04)' : 'rgba(255, 180, 190, 0.035)');
       rg.addColorStop(1, 'rgba(0, 0, 0, 0)');
       petalCtx.fillStyle = rg;
       petalCtx.fillRect(x - r, y - r, r * 2, r * 2);
@@ -281,36 +290,36 @@ try {
 
     // Radiating organic petal veins
     petalCtx.lineCap = 'round';
-    const veinCount = 72;
+    const veinCount = 68;
     for (let k = 0; k < veinCount; k++) {
       const t = k / (veinCount - 1);
-      const x2 = w * (0.03 + 0.94 * t);
-      const bend = (t - 0.5) * w * 0.36;
+      const x2 = w * (0.04 + 0.92 * t);
+      const bend = (t - 0.5) * w * 0.32;
       petalCtx.beginPath();
-      petalCtx.moveTo(w * (0.5 + (t - 0.5) * 0.12), h);
+      petalCtx.moveTo(w * (0.5 + (t - 0.5) * 0.14), h);
       petalCtx.bezierCurveTo(
         w * 0.5 + bend * 0.2,
-        h * 0.7,
-        w * 0.5 + (x2 - w * 0.5) * 0.72,
-        h * 0.35,
+        h * 0.72,
+        w * 0.5 + (x2 - w * 0.5) * 0.7,
+        h * 0.36,
         x2,
         h * (0.02 + Math.random() * 0.08)
       );
-      petalCtx.strokeStyle = 'rgba(25, 0, 8, 0.075)';
-      petalCtx.lineWidth = 1.0 + Math.random() * 2.2;
+      petalCtx.strokeStyle = 'rgba(20, 0, 8, 0.065)';
+      petalCtx.lineWidth = 1.0 + Math.random() * 1.8;
       petalCtx.stroke();
     }
 
-    // Velvet micro-papillae grain (breaks specular plastic highlights)
-    for (let i = 0; i < 48000; i++) {
-      petalCtx.fillStyle = Math.random() < 0.5 ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.035)';
+    // Velvet micro-fuzz stippling
+    for (let i = 0; i < 40000; i++) {
+      petalCtx.fillStyle = Math.random() < 0.5 ? 'rgba(255, 200, 210, 0.028)' : 'rgba(10, 0, 5, 0.03)';
       petalCtx.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5);
     }
 
     petalMap.needsUpdate = true;
   }
 
-  // Petal Bump Map (fine radial furrows for velvet anisotropic scattering)
+  // 2. Petal Bump Map (fine radial velvety furrows)
   const petalBumpCanvas = document.createElement('canvas');
   petalBumpCanvas.width = 1024;
   petalBumpCanvas.height = 2048;
@@ -318,78 +327,81 @@ try {
   pbCtx.fillStyle = '#808080';
   pbCtx.fillRect(0, 0, 1024, 2048);
   pbCtx.lineCap = 'round';
-  for (let k = 0; k < 72; k++) {
-    const t = k / 71;
-    const x2 = 1024 * (0.03 + 0.94 * t);
+  for (let k = 0; k < 68; k++) {
+    const t = k / 67;
+    const x2 = 1024 * (0.04 + 0.92 * t);
     pbCtx.beginPath();
-    pbCtx.moveTo(1024 * (0.5 + (t - 0.5) * 0.12), 2048);
-    pbCtx.bezierCurveTo(512 + (t - 0.5) * 60, 1400, 512 + (x2 - 512) * 0.72, 700, x2, 80 + Math.random() * 120);
-    pbCtx.strokeStyle = 'rgba(0, 0, 0, 0.42)';
-    pbCtx.lineWidth = 2.4 + Math.random() * 3.0;
+    pbCtx.moveTo(1024 * (0.5 + (t - 0.5) * 0.14), 2048);
+    pbCtx.bezierCurveTo(512 + (t - 0.5) * 50, 1450, 512 + (x2 - 512) * 0.7, 720, x2, 80 + Math.random() * 100);
+    pbCtx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+    pbCtx.lineWidth = 2.2 + Math.random() * 2.5;
     pbCtx.stroke();
   }
-  for (let i = 0; i < 45000; i++) {
-    const v = 128 + (Math.random() - 0.5) * 55;
+  for (let i = 0; i < 35000; i++) {
+    const v = 128 + (Math.random() - 0.5) * 45;
     pbCtx.fillStyle = `rgb(${v},${v},${v})`;
-    pbCtx.globalAlpha = 0.35;
+    pbCtx.globalAlpha = 0.3;
     pbCtx.fillRect(Math.random() * 1024, Math.random() * 2048, 2, 2);
   }
   pbCtx.globalAlpha = 1.0;
   const petalBumpMap = new THREE.CanvasTexture(petalBumpCanvas);
   petalBumpMap.anisotropy = maxAniso;
 
-  // Leaf Maps (matching deep glossy bottle green of rose1.jpg)
+  // 3. Botanical Leaf Diffuse Map (NO white veins, NO chrome reflections!)
   const leafCanvas = document.createElement('canvas');
   leafCanvas.width = 1024;
   leafCanvas.height = 2048;
   const lfCtx = leafCanvas.getContext('2d');
+  // Rich chlorophyll botanical green gradient
   const lg = lfCtx.createLinearGradient(0, 2048, 0, 0);
-  lg.addColorStop(0.0, '#122c15');
-  lg.addColorStop(0.5, '#183c1b');
-  lg.addColorStop(1.0, '#214e24');
+  lg.addColorStop(0.0, '#1c3e1e');
+  lg.addColorStop(0.5, '#224a25');
+  lg.addColorStop(1.0, '#2b572e');
   lfCtx.fillStyle = lg;
   lfCtx.fillRect(0, 0, 1024, 2048);
 
-  // Secondary interveinal cushion soft highlighting
-  const veinPairs = 14;
+  // Soft interveinal cushions (subtle natural variation in chlorophyll density)
+  const veinPairs = 12;
   for (let k = 0; k < veinPairs; k++) {
     const y = 2048 * (0.94 - (k / veinPairs) * 0.86);
     for (const side of [-1, 1]) {
-      const cx = 512 + side * 160;
-      const cy = y - 60;
+      const cx = 512 + side * 170;
+      const cy = y - 55;
       const crg = lfCtx.createRadialGradient(cx, cy, 0, cx, cy, 140);
-      crg.addColorStop(0, 'rgba(45, 95, 42, 0.28)');
+      crg.addColorStop(0, 'rgba(48, 102, 45, 0.22)');
       crg.addColorStop(1, 'rgba(0, 0, 0, 0)');
       lfCtx.fillStyle = crg;
       lfCtx.fillRect(cx - 150, cy - 150, 300, 300);
     }
   }
 
-  // Central midrib & lateral pinnate veins
+  // Midrib vein: delicate sap-green (NOT bright white!)
   lfCtx.lineCap = 'round';
-  lfCtx.strokeStyle = 'rgba(168, 212, 118, 0.58)';
-  lfCtx.lineWidth = 10;
+  lfCtx.strokeStyle = 'rgba(75, 125, 60, 0.45)';
+  lfCtx.lineWidth = 8;
   lfCtx.beginPath();
   lfCtx.moveTo(512, 2048);
   lfCtx.lineTo(512, 40);
   lfCtx.stroke();
 
-  lfCtx.lineWidth = 3.6;
+  // Secondary lateral pinnate veins: subtle translucent olive green
+  lfCtx.strokeStyle = 'rgba(65, 110, 52, 0.32)';
+  lfCtx.lineWidth = 2.8;
   for (let k = 0; k < veinPairs; k++) {
     const y = 2048 * (0.94 - (k / veinPairs) * 0.86);
     for (const side of [-1, 1]) {
       lfCtx.beginPath();
       lfCtx.moveTo(512, y);
-      lfCtx.quadraticCurveTo(512 + side * 220, y - 70, 512 + side * 470, y - 260);
+      lfCtx.quadraticCurveTo(512 + side * 200, y - 60, 512 + side * 460, y - 240);
       lfCtx.stroke();
     }
   }
-  // Delicate reddish perimeter margin (young rose foliage in rose1.jpg)
+  // Delicate reddish-bronze perimeter margin on young growth
   const leg = lfCtx.createLinearGradient(0, 0, 1024, 0);
-  leg.addColorStop(0, 'rgba(145, 42, 28, 0.32)');
-  leg.addColorStop(0.06, 'rgba(145, 42, 28, 0)');
-  leg.addColorStop(0.94, 'rgba(145, 42, 28, 0)');
-  leg.addColorStop(1.0, 'rgba(145, 42, 28, 0.32)');
+  leg.addColorStop(0, 'rgba(130, 42, 28, 0.22)');
+  leg.addColorStop(0.06, 'rgba(130, 42, 28, 0)');
+  leg.addColorStop(0.94, 'rgba(130, 42, 28, 0)');
+  leg.addColorStop(1.0, 'rgba(130, 42, 28, 0.22)');
   lfCtx.fillStyle = leg;
   lfCtx.fillRect(0, 0, 1024, 2048);
 
@@ -397,7 +409,7 @@ try {
   leafMap.colorSpace = THREE.SRGBColorSpace;
   leafMap.anisotropy = maxAniso;
 
-  // Leaf Bump Map (sunken midrib, lateral vein grooves, and raised quilted cushions)
+  // 4. Leaf Bump Map (Gentle organic porosity and soft vein grooves)
   const leafBumpCanvas = document.createElement('canvas');
   leafBumpCanvas.width = 1024;
   leafBumpCanvas.height = 2048;
@@ -405,112 +417,95 @@ try {
   lfbCtx.fillStyle = '#808080';
   lfbCtx.fillRect(0, 0, 1024, 2048);
 
-  // Raised quilted cushions between veins
-  for (let k = 0; k < veinPairs; k++) {
-    const y = 2048 * (0.94 - (k / veinPairs) * 0.86);
-    for (const side of [-1, 1]) {
-      const cx = 512 + side * 180;
-      const cy = y - 65;
-      const crg = lfbCtx.createRadialGradient(cx, cy, 0, cx, cy, 150);
-      crg.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
-      crg.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      lfbCtx.fillStyle = crg;
-      lfbCtx.fillRect(cx - 160, cy - 160, 320, 320);
-    }
-  }
-
-  // Sunken midrib groove
-  lfbCtx.strokeStyle = 'rgba(0, 0, 0, 0.72)';
-  lfbCtx.lineWidth = 14;
+  // Soft sunken midrib
+  lfbCtx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+  lfbCtx.lineWidth = 10;
   lfbCtx.beginPath();
   lfbCtx.moveTo(512, 2048);
   lfbCtx.lineTo(512, 40);
   lfbCtx.stroke();
 
-  // Sunken lateral vein channels
-  lfbCtx.lineWidth = 5.5;
+  // Soft secondary vein troughs
+  lfbCtx.lineWidth = 4;
   for (let k = 0; k < veinPairs; k++) {
     const y = 2048 * (0.94 - (k / veinPairs) * 0.86);
     for (const side of [-1, 1]) {
       lfbCtx.beginPath();
       lfbCtx.moveTo(512, y);
-      lfbCtx.quadraticCurveTo(512 + side * 220, y - 70, 512 + side * 470, y - 260);
+      lfbCtx.quadraticCurveTo(512 + side * 200, y - 60, 512 + side * 460, y - 240);
       lfbCtx.stroke();
     }
   }
   const leafBumpMap = new THREE.CanvasTexture(leafBumpCanvas);
   leafBumpMap.anisotropy = maxAniso;
 
-  // Render initial default Velvet Crimson canvas
+  // Render initial default Velvet Crimson
   renderPetalCanvas(currentPalette);
 
   // -----------------------------------------------------------
-  //  Photorealistic Physical Materials
+  //  Botanical Materials (Physically Based, Natural Satin Sheen)
   // -----------------------------------------------------------
   const petalMat = new THREE.MeshPhysicalMaterial({
     map: petalMap,
     bumpMap: petalBumpMap,
-    bumpScale: 0.55,
+    bumpScale: 0.35,
     vertexColors: true,
-    roughness: currentPalette.roughness,
-    sheen: 1.0,
-    sheenRoughness: 0.26,
+    roughness: currentPalette.roughness, // 0.68: soft velvety matte, zero plastic shine!
+    sheen: 0.95,
+    sheenRoughness: 0.42,
     sheenColor: new THREE.Color(currentPalette.sheen),
-    clearcoat: 0.12,
-    clearcoatRoughness: 0.32,
-    transmission: 0.18,
-    thickness: 0.35,
-    ior: 1.45,
+    clearcoat: 0.0,                      // NO shiny car-paint clearcoat on petals!
+    metalness: 0.0,
     emissive: new THREE.Color(currentPalette.emissive),
-    emissiveIntensity: 0.32,
+    emissiveIntensity: 0.28,             // Simulates subsurface scattering through thin petals
     side: THREE.DoubleSide
   });
 
-  // Glossy, leathery (coriaceous) leaf material matching rose1.jpg
-  const leafMat = new THREE.MeshPhysicalMaterial({
+  // Natural Botanical Leaf Material (Soft Satin Green, ZERO Chrome/Metallic Sheen!)
+  const leafMat = new THREE.MeshStandardMaterial({
     map: leafMap,
     bumpMap: leafBumpMap,
-    bumpScale: 1.6,
+    bumpScale: 0.28,                     // restrained natural relief, no jagged silver reflections
     vertexColors: true,
-    roughness: 0.28,             // waxy glossy sheen
-    clearcoat: 0.78,             // thick waxy cuticle layer
-    clearcoatRoughness: 0.22,
-    sheen: 0.28,
-    sheenColor: new THREE.Color('#82bf55'),
+    roughness: 0.62,                     // soft botanical satin sheen (not a plastic mirror)
+    metalness: 0.0,                      // strictly zero metalness
     side: THREE.DoubleSide
   });
 
   const stemMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
     vertexColors: true,
-    roughness: 0.48
+    roughness: 0.58,
+    metalness: 0.0
   });
 
   const prickleMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
     vertexColors: true,
-    roughness: 0.45,
+    roughness: 0.52,
+    metalness: 0.0,
     side: THREE.DoubleSide
   });
 
   const sepalMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
     vertexColors: true,
-    roughness: 0.55,
+    roughness: 0.64,
+    metalness: 0.0,
     side: THREE.DoubleSide
   });
 
-  // Sparkling Refractive Dewdrops (matching the dewdrops in rose1.jpg)
+  // Glistening Morning Dewdrops
   const dewMat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
-    roughness: 0.015,
-    metalness: 0,
+    roughness: 0.02,
+    metalness: 0.0,
     transmission: 1.0,
     ior: 1.333,
-    thickness: 0.08,
+    thickness: 0.06,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.02,
-    envMapIntensity: 2.8,
+    clearcoatRoughness: 0.03,
+    envMapIntensity: 1.8,
     specularIntensity: 1.0
   });
 
@@ -524,10 +519,8 @@ try {
   }
 
   // -----------------------------------------------------------
-  //  Advanced Parametric Mesh Builders
+  //  Tapered Organic Stem & Prickle (Thorn) Builders
   // -----------------------------------------------------------
-
-  // Tube geometry builder
   function makeTube(curve, segs, radial, radiusFn, colorFn) {
     const geo = new THREE.TubeGeometry(curve, segs, 1, radial, false);
     const pos = geo.attributes.position;
@@ -552,22 +545,21 @@ try {
     return geo;
   }
 
-  // Prickle (Hooked Thorn) Builder
   function makePrickle(size) {
     const positions = [], uvs = [], colors = [], indices = [];
     const rows = 12, cols = 6;
     for (let i = 0; i <= rows; i++) {
       const u = i / rows;
-      const w = size * 0.38 * Math.pow(1 - u, 0.88) + 0.002;
+      const w = size * 0.36 * Math.pow(1 - u, 0.9) + 0.002;
       const cy = u * size;
-      const hookShift = -size * 0.62 * u * u; // hooks downwards
+      const hookShift = -size * 0.58 * u * u;
       for (let j = 0; j <= cols; j++) {
         const v = (j / cols) * 2 - 1;
         const x = v * w;
-        const zc = 0.2 * w * (1 - v * v) * (1 - u);
+        const zc = 0.18 * w * (1 - v * v) * (1 - u);
         positions.push(x, cy, zc + hookShift);
         uvs.push((v + 1) / 2, u);
-        const c = mix(hex('#462316'), hex('#72261e'), u);
+        const c = mix(hex('#462618'), hex('#6a271e'), u);
         colors.push(c[0], c[1], c[2]);
       }
     }
@@ -587,50 +579,47 @@ try {
   }
 
   // -----------------------------------------------------------
-  //  Hyper-Realistic Leaflet Builder
-  //  - Quilted interveinal cushions (3D surface elevation)
-  //  - Sunken central midrib groove
-  //  - Acuminate arching tip & sharp forward serrations
+  //  Botanical Compound Leaf Builder (Serrated, Quilted, Natural Foliage)
   // -----------------------------------------------------------
   function makeRealisticLeaflet(len, young) {
-    const rows = 60, cols = 28;
+    const rows = 48, cols = 24;
     const positions = [], uvs = [], colors = [], indices = [];
-    const W = len * 0.35;
+    const W = len * 0.34;
     const tint = young
-      ? [rr(1.18, 1.35), rr(0.86, 0.96), rr(0.8, 0.92)]
-      : [rr(0.92, 1.04), rr(0.94, 1.06), rr(0.9, 1.0)];
+      ? [rr(1.15, 1.28), rr(0.9, 0.98), rr(0.85, 0.94)]
+      : [rr(0.94, 1.04), rr(0.95, 1.05), rr(0.92, 1.0)];
 
     for (let i = 0; i <= rows; i++) {
       const u = i / rows;
-      // Ovate-elliptic leaf outline
+      // Elliptical-ovate leaflet outline
       const baseCurve = Math.pow(Math.sin(Math.PI * Math.pow(u, 0.72)), 0.75);
-      const saw = 1.0 - 0.08 + 0.08 * ((u * 16) % 1); // serrated margin
-      const curW = W * baseCurve * (u > 0.06 && u < 0.94 ? saw : 1.0);
+      const saw = 1.0 - 0.065 + 0.065 * ((u * 16) % 1); // fine serrations
+      const curW = W * baseCurve * (u > 0.07 && u < 0.93 ? saw : 1.0);
 
-      // Midrib arch: rises, then curves gracefully downward
+      // Midrib arch: rises slightly then curves gracefully down
       const cy = len * u;
-      const midArch = 0.14 * Math.sin(u * 2.2) - 0.52 * Math.pow(u, 1.85);
+      const midArch = 0.12 * Math.sin(u * 2.2) - 0.46 * Math.pow(u, 1.85);
 
       for (let j = 0; j <= cols; j++) {
         const v = (j / cols) * 2 - 1;
         const x = v * curW;
 
-        // V-shaped dihedral keel fold along midrib
-        const keel = Math.abs(x) * 0.38;
+        // V-shaped dihedral keel along midrib
+        const keel = Math.abs(x) * 0.34;
 
-        // 3D Sunken midrib groove
-        const midribGroove = -0.007 * Math.exp(-30 * v * v) * smoothstep(0.05, 0.9, u);
+        // Sunken central midrib channel
+        const midribGroove = -0.0055 * Math.exp(-28 * v * v) * smoothstep(0.05, 0.9, u);
 
-        // 3D Quilted interveinal cushions (characteristic raised pillows between veins)
-        const veinWave = Math.sin(u * 26 * Math.PI - Math.abs(v) * 3.8);
-        const cushion = 0.0055 * Math.max(0, veinWave) * (1 - v * v) * Math.sin(Math.PI * u);
+        // Raised quilted interveinal cushions (true 3D surface relief!)
+        const veinWave = Math.sin(u * 24 * Math.PI - Math.abs(v) * 3.6);
+        const cushion = 0.0045 * Math.max(0, veinWave) * (1 - v * v) * Math.sin(Math.PI * u);
 
         const z = midArch + keel + midribGroove + cushion;
         positions.push(x, cy, z);
         uvs.push((v + 1) / 2, u);
 
-        // Baked ambient occlusion (darker in the midrib fold & base)
-        const ao = lerp(0.8, 1.0, smoothstep(0, 0.35, u)) * (1.0 - 0.08 * v * v);
+        // Baked ambient occlusion (soft shadowing in keel & base)
+        const ao = lerp(0.84, 1.0, smoothstep(0, 0.35, u)) * (1.0 - 0.06 * v * v);
         colors.push(ao * tint[0], ao * tint[1], ao * tint[2]);
       }
     }
@@ -655,31 +644,30 @@ try {
     return m;
   }
 
-  // Compound Leaf (5 serrated leaflets: 1 terminal + 2 lateral pairs + stipules)
   function makeCompoundLeaf(scale, young) {
     const g = new THREE.Group();
     const rachis = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0.18, 0.09, 0),
-      new THREE.Vector3(0.44, 0.14, 0),
-      new THREE.Vector3(0.68, 0.09, 0),
+      new THREE.Vector3(0.18, 0.08, 0),
+      new THREE.Vector3(0.44, 0.12, 0),
+      new THREE.Vector3(0.68, 0.08, 0),
       new THREE.Vector3(0.88, 0.0, 0)
     ]);
     const rachisGeo = makeTube(
-      rachis, 24, 6,
-      (t) => 0.012 * (1 - 0.6 * t),
-      (t) => mix(hex('#32632b'), hex(young ? '#783827' : '#417332'), 0.3 + 0.2 * t)
+      rachis, 22, 6,
+      (t) => 0.011 * (1 - 0.58 * t),
+      (t) => mix(hex('#32632b'), hex(young ? '#743726' : '#3f7032'), 0.3 + 0.2 * t)
     );
     const rm = new THREE.Mesh(rachisGeo, stemMat);
     rm.castShadow = true;
     g.add(rm);
 
     const specs = [
-      { t: 0.52, side: 1, len: 0.36 },
-      { t: 0.52, side: -1, len: 0.36 },
+      { t: 0.52, side: 1, len: 0.35 },
+      { t: 0.52, side: -1, len: 0.35 },
       { t: 0.77, side: 1, len: 0.42 },
       { t: 0.77, side: -1, len: 0.42 },
-      { t: 1.0, side: 0, len: 0.55 }
+      { t: 1.0, side: 0, len: 0.54 }
     ];
     specs.forEach((sp) => {
       const P = rachis.getPointAt(sp.t);
@@ -696,63 +684,43 @@ try {
       g.add(leaflet);
     });
 
-    // Stipules at petiole attachment
-    for (const side of [-1, 1]) {
-      const sm = makePrickle(0.12);
-      sm.position.set(0.018, 0.0, side * 0.012);
-      sm.scale.set(0.7, 0.8, 0.5);
-      g.add(sm);
-    }
-
     g.scale.setScalar(scale);
     return g;
   }
 
   // -----------------------------------------------------------
-  //  Hyper-Realistic Rose Bloom Architecture
-  //  5 Whorls:
-  //    1. Core Swirl (petals 0-7): Convolute spiral cone
-  //    2. High Center (petals 8-18): Cupped spiral cone with reflexing tips
-  //    3. Mid Cup (petals 19-32): Deep bowl with reflexed lip & pointed beak
-  //    4. Flared Skirt (petals 33-46): Wide petals, recurved margins, ripples
-  //    5. Guard Petals (petals 47-54): Broad reflexed base petals
+  //  Botanical Petal Geometry Builder
+  //  Double-curved bowl, reflexed margin lip, pointed apical beak, central notch
   // -----------------------------------------------------------
-  const GOLDEN = (137.508 * Math.PI) / 180;
-  const dewDropGeo = new THREE.SphereGeometry(1, 20, 14);
-  const allPetalNodes = [];
-  const dewDropMeshes = [];
-
   function buildAuthenticPetalMesh({ s, whorlIndex, bloomStage }) {
-    const rows = 46, cols = 28;
+    const rows = 40, cols = 24;
     const positions = [], uvs = [], colors = [], indices = [];
 
-    // Scale dimensions based on Fibonacci whorl
     const isCore = whorlIndex === 0;
     const isInner = whorlIndex === 1;
     const isMid = whorlIndex === 2;
-    const isOuter = whorlIndex >= 3;
 
-    // Petal Length & Width
+    // Proportional dimensions across whorls
     const L = lerp(0.32, 0.78, Math.pow(s, 0.75)) * lerp(0.55, 1.0, bloomStage);
     const W = lerp(0.12, 0.44, Math.pow(s, 0.85)) * lerp(0.5, 1.0, bloomStage);
 
-    // Cross-section wrap angle (spiral wrap on core, flatter cup on outer)
-    const wrap = lerp(3.8, 1.1, Math.pow(s, 0.65));
+    // Cross-section wrap (tight spiral core vs open outer petals)
+    const wrap = lerp(3.6, 1.15, Math.pow(s, 0.65));
 
-    // Lengthwise bend: inner petals curve inward around core; outer petals curve out
-    const bendTotal = lerp(0.85, -0.48, Math.pow(s, 0.8) * bloomStage);
+    // Lengthwise inward vs outward bending
+    const bendTotal = lerp(0.82, -0.44, Math.pow(s, 0.8) * bloomStage);
 
-    // Reflex roll (the backward fold of the rim seen in rose1.jpg)
-    const roll = isCore ? 0.0 : isInner ? 0.04 : isMid ? 0.12 : 0.16;
+    // Reflex roll (backward curl along upper margin)
+    const roll = isCore ? 0.0 : isInner ? 0.035 : isMid ? 0.11 : 0.15;
 
-    // Pointed reflex beak at apex (creates the classic high-tea pointed petal lip)
-    const pointReflex = isCore ? 0.0 : isInner ? 0.03 : 0.07;
+    // Pointed apical beak (classic high-tea rose reflex point)
+    const pointReflex = isCore ? 0.0 : isInner ? 0.025 : 0.065;
 
-    // Organic wavy ripple along petal margin
-    const ripple = lerp(0.002, 0.024, s * bloomStage);
+    // Organic wavy ripple along margin
+    const ripple = lerp(0.002, 0.022, s * bloomStage);
     const rf = rr(10, 14), ph = rr(0, 6.28);
     const inner = 1.0 - s;
-    const tint = [rr(0.95, 1.05), rr(0.9, 1.1), rr(0.9, 1.1)];
+    const tint = [rr(0.96, 1.04), rr(0.92, 1.08), rr(0.92, 1.08)];
 
     // Heart-shaped broad petal outline
     const petalOutline = (u) => {
@@ -782,7 +750,7 @@ try {
       for (let j = 0; j <= cols; j++) {
         const v = (j / cols) * 2 - 1;
 
-        // Double-curved wrap
+        // Double-curved bowl wrap
         const wr = wrap * (0.85 + 0.15 * smoothstep(0, 0.45, u));
         const a = (v * wr) / 2;
         const x = (curW * Math.sin(a)) / (wr / 2);
@@ -792,22 +760,22 @@ try {
         const edge = Math.pow(Math.abs(v), 2.4);
         zc += ripple * edge * smoothstep(0.3, 1.0, u) * Math.sin(u * rf + ph + v * 1.8);
 
-        // Reflex roll (backward fold over the top rim)
+        // Soft reflexed upper rim
         zc -= roll * Math.pow(smoothstep(0.55, 1.0, u), 1.6) * (0.35 + 0.65 * Math.pow(Math.abs(v), 1.3));
 
-        // Pointed apex beak (the signature high-tea rose reflex point in rose1.jpg)
+        // Pointed apical beak
         zc -= pointReflex * Math.pow(u, 4) * Math.exp(-v * v * 7.0);
 
-        // Delicate central notch at apex
-        const notch = -L * 0.045 * Math.pow(u, 8) * Math.exp(-v * v * 5.5);
+        // Subtle notch at apex
+        const notch = -L * 0.042 * Math.pow(u, 8) * Math.exp(-v * v * 5.5);
 
         positions.push(x, cy + notch - sb * zc, cz + cb * zc);
         uvs.push((v + 1) / 2, u);
 
-        // Baked ambient occlusion & velvet edge lift
-        const depth = lerp(0.26, 0.94, 1.0 - inner * 0.9);
-        const ao = lerp(depth * 0.5, 1.0, smoothstep(0.0, 0.85, u));
-        const edgeLift = 1.0 + 0.12 * Math.pow(Math.abs(v), 3) * smoothstep(0.4, 1.0, u);
+        // Baked ambient occlusion in folds
+        const depth = lerp(0.3, 0.95, 1.0 - inner * 0.9);
+        const ao = lerp(depth * 0.52, 1.0, smoothstep(0.0, 0.85, u));
+        const edgeLift = 1.0 + 0.1 * Math.pow(Math.abs(v), 3) * smoothstep(0.4, 1.0, u);
         const c = ao * edgeLift;
         colors.push(c * tint[0], c * tint[1], c * tint[2]);
       }
@@ -833,28 +801,37 @@ try {
     return mesh;
   }
 
+  // -----------------------------------------------------------
+  //  Flower Head Generator (All Flowering Stages)
+  //  5 Whorls of petals arranged on Fibonacci phyllotaxis
+  // -----------------------------------------------------------
+  const GOLDEN = (137.508 * Math.PI) / 180;
+  const dewDropGeo = new THREE.SphereGeometry(1, 16, 12);
+  const allPetalNodes = [];
+  const dewDropMeshes = [];
+
   function createFlowerHead({ stage = 1.0, scale = 1.0, isHero = false }) {
     const headGroup = new THREE.Group();
     headGroup.userData = { stage, baseScale: scale, isHero };
 
-    // 1. Rose Hip / Receptacle
+    // 1. Swollen Rose Hip / Receptacle
     const hipRadiusScale = lerp(0.65, 1.0, stage);
     const hipProfile = [
       [0.026 * hipRadiusScale, 0],
       [0.048 * hipRadiusScale, 0.035],
       [0.088 * hipRadiusScale, 0.09],
       [0.13 * hipRadiusScale, 0.16],
-      [0.152 * hipRadiusScale, 0.23],
-      [0.138 * hipRadiusScale, 0.29],
+      [0.15 * hipRadiusScale, 0.23],
+      [0.136 * hipRadiusScale, 0.29],
       [0.095 * hipRadiusScale, 0.33],
       [0.045 * hipRadiusScale, 0.345],
       [0.0, 0.35]
     ].map(([x, y]) => new THREE.Vector2(x, y));
 
-    const hipGeo = new THREE.LatheGeometry(hipProfile, 28);
+    const hipGeo = new THREE.LatheGeometry(hipProfile, 24);
     const hp = hipGeo.attributes.position, hcol = new Float32Array(hp.count * 3);
     for (let i = 0; i < hp.count; i++) {
-      const c = mix(hex('#366329'), hex('#662d20'), smoothstep(0.1, 0.34, hp.getY(i)) * 0.5);
+      const c = mix(hex('#366329'), hex('#642d20'), smoothstep(0.1, 0.34, hp.getY(i)) * 0.5);
       hcol.set(c, i * 3);
     }
     hipGeo.setAttribute('color', new THREE.BufferAttribute(hcol, 3));
@@ -869,29 +846,29 @@ try {
     bloom.position.y = 0.335;
     headGroup.add(bloom);
 
-    // 2. Sepals (5 calyx blades)
+    // 2. Pointed Green Sepals (2 with pinnatifid lateral appendages, as in real roses)
     const sepalCount = 5;
     for (let i = 0; i < sepalCount; i++) {
       const az = i * ((Math.PI * 2) / sepalCount) + 0.32;
       const len = lerp(0.34, 0.5, Math.min(1, stage * 1.2));
-      const isFringed = i < 2;
-      const reflexAmount = lerp(-0.35, 0.88, Math.pow(stage, 0.75));
+      const isPinnatifid = i < 2; // 2 of 5 sepals have lateral appendages
+      const reflexAmount = lerp(-0.35, 0.85, Math.pow(stage, 0.75));
 
       const positions = [], uvs = [], colors = [], indices = [];
       const rows = 28, cols = 6;
       for (let ri = 0; ri <= rows; ri++) {
         const u = ri / rows;
-        let w = 0.06 * Math.pow(Math.sin(Math.PI * Math.pow(u, 0.5)), 0.75) * (1 - 0.32 * u);
-        if (isFringed && u > 0.15 && u < 0.8) w *= 1 + 0.5 * Math.max(0, Math.sin(u * 50));
+        let w = 0.058 * Math.pow(Math.sin(Math.PI * Math.pow(u, 0.5)), 0.75) * (1 - 0.32 * u);
+        if (isPinnatifid && u > 0.18 && u < 0.75) w *= 1 + 0.48 * Math.max(0, Math.sin(u * 45));
         const cy = len * u;
         const cz = -0.15 * u + reflexAmount * u * u;
         for (let cj = 0; cj <= cols; cj++) {
           const v = (cj / cols) * 2 - 1;
           const x = v * w;
-          const zc = Math.abs(x) * 1.1;
+          const zc = Math.abs(x) * 1.05;
           positions.push(x, cy, cz + zc);
           uvs.push((v + 1) / 2, u);
-          const c = mix(hex('#244c21'), hex('#477332'), u);
+          const c = mix(hex('#254d22'), hex('#477432'), u);
           colors.push(c[0], c[1], c[2]);
         }
       }
@@ -909,7 +886,7 @@ try {
       sgeo.computeVertexNormals();
 
       const sm = new THREE.Mesh(sgeo, sepalMat);
-      const phi = lerp(0.35, 2.18, Math.pow(stage, 0.85));
+      const phi = lerp(0.35, 2.15, Math.pow(stage, 0.85));
       const r = new THREE.Vector3(Math.cos(az), 0, Math.sin(az));
       const yw = new THREE.Vector3(0, Math.cos(phi), 0).addScaledVector(r, Math.sin(phi));
       const zw = r.clone().multiplyScalar(-Math.cos(phi));
@@ -924,8 +901,8 @@ try {
       bloom.add(sm);
     }
 
-    // 3. Petals Laid out in 5 Botanical Spiral Whorls
-    const maxPetals = stage > 0.8 ? 54 : stage > 0.4 ? 38 : stage > 0.18 ? 24 : 12;
+    // 3. Petals Across 5 Whorls (Golden Angle Phyllotaxis)
+    const maxPetals = stage > 0.8 ? 50 : stage > 0.4 ? 36 : stage > 0.18 ? 22 : 12;
     const myPetalNodes = [];
 
     for (let i = 0; i < maxPetals; i++) {
@@ -933,14 +910,12 @@ try {
       const whorlIndex = Math.min(4, Math.floor(s * 5));
       const ang = i * GOLDEN + rr(-0.03, 0.03);
 
-      // Radial distance from center: tight spiral core to wide skirt
-      const r0 = (0.008 + 0.11 * Math.pow(s, 0.95)) * lerp(0.32, 1.0, stage);
-      const y0 = (0.02 * (1.0 - s) - 0.068 * s * s) * stage;
+      const r0 = (0.009 + 0.108 * Math.pow(s, 0.95)) * lerp(0.32, 1.0, stage);
+      const y0 = (0.02 * (1.0 - s) - 0.066 * s * s) * stage;
 
-      // Petal tilt angle (phi): tight upright center (phi ~ 0.05) to flaring skirt (phi ~ 1.1)
       const phi = Math.max(
         0.02,
-        (0.04 + 1.08 * Math.pow(s, 1.7)) * lerp(0.2, 1.06, Math.pow(stage, 0.75)) + rr(-0.03, 0.03) * s
+        (0.04 + 1.06 * Math.pow(s, 1.7)) * lerp(0.2, 1.05, Math.pow(stage, 0.75)) + rr(-0.03, 0.03) * s
       );
 
       const rhat = new THREE.Vector3(Math.cos(ang), 0, Math.sin(ang));
@@ -961,7 +936,7 @@ try {
         base: pivot.quaternion.clone(),
         basePos: pivot.position.clone(),
         phase: ang * 1.8 + i,
-        amp: 0.005 + 0.018 * s,
+        amp: 0.004 + 0.015 * s,
         s,
         stage
       };
@@ -971,18 +946,18 @@ try {
       allPetalNodes.push({ pivot, mesh, s, headGroup });
     }
 
-    // 4. Sparkling Dewdrops on Petals (matching the glistening drops in rose1.jpg)
+    // 4. Subtle Sparkling Morning Dewdrops
     if (stage > 0.3) {
-      const dropCount = Math.floor(lerp(8, isHero ? 85 : 28, Math.pow(stage, 0.8)));
+      const dropCount = Math.floor(lerp(6, isHero ? 75 : 24, Math.pow(stage, 0.8)));
       const placed = [];
       let attempts = 0;
-      while (placed.length < dropCount && attempts++ < 800) {
+      while (placed.length < dropCount && attempts++ < 700) {
         const node = myPetalNodes[Math.floor(rr(myPetalNodes.length * 0.4, myPetalNodes.length))];
         if (!node) continue;
         const posAttr = node.mesh.geometry.attributes.position;
         const norAttr = node.mesh.geometry.attributes.normal;
-        const row = Math.floor(rr(14, 40)), col = Math.floor(rr(6, 22));
-        const idx = row * 29 + col;
+        const row = Math.floor(rr(14, 38)), col = Math.floor(rr(6, 20));
+        const idx = row * 25 + col;
         if (idx >= posAttr.count) continue;
 
         const p = new THREE.Vector3().fromBufferAttribute(posAttr, idx);
@@ -991,7 +966,7 @@ try {
         if (placed.some((q) => q.distanceTo(p) < 0.045)) continue;
         placed.push(p.clone());
 
-        const radius = rr(0.009, isHero ? 0.028 : 0.018);
+        const radius = rr(0.009, isHero ? 0.026 : 0.016);
         const drop = new THREE.Mesh(dewDropGeo, dewMat);
         drop.position.copy(p).addScaledVector(n, radius * 0.55);
         drop.quaternion.setFromUnitVectors(UP, n);
@@ -1027,7 +1002,7 @@ try {
     new THREE.Vector3(0.12, 2.45, 0.03),
     new THREE.Vector3(0.14, 2.75, 0.0)
   ]);
-  const stemBase = hex('#3d3d1c'), stemTop = hex('#2b592c'), stemRed = hex('#52281c');
+  const stemBase = hex('#3d3c1c'), stemTop = hex('#2b582b'), stemRed = hex('#52271b');
 
   const mainStemGeo = makeTube(
     mainStemCurve, 90, 12,
@@ -1080,10 +1055,10 @@ try {
     mainStemGroup.add(leaf);
     animatedLeaves.push(leaf);
 
-    // Glistening dewdrops on leaf surfaces (as in rose1.jpg)
-    for (let d = 0; d < 6; d++) {
+    // Glistening dewdrops on foliage
+    for (let d = 0; d < 5; d++) {
       const drop = new THREE.Mesh(dewDropGeo, dewMat);
-      const rad = rr(0.008, 0.018);
+      const rad = rr(0.008, 0.016);
       drop.scale.set(rad * 1.2, rad * 0.55, rad * 1.2);
       drop.position.set(rr(0.1, 0.6) * n.scale, rr(0.02, 0.08) * n.scale, rr(-0.1, 0.1) * n.scale);
       leaf.add(drop);
@@ -1091,7 +1066,7 @@ try {
     }
   });
 
-  // Stage 4: Hero Full Splendor Rose at Apex (matching rose1.jpg)
+  // Stage 4: Hero Full Splendor Bloom at Apex
   const heroFlower = createFlowerHead({ stage: 1.0, scale: 1.0, isHero: true });
   heroFlower.headGroup.position.copy(mainStemCurve.getPointAt(1));
   heroFlower.headGroup.quaternion.setFromUnitVectors(UP, mainStemCurve.getTangentAt(1));
@@ -1105,7 +1080,7 @@ try {
     new THREE.Vector3(0.72, 2.32, 0.18),
     new THREE.Vector3(0.96, 2.52, 0.14)
   ]);
-  const branch1Geo = makeTube(branch1Curve, 42, 8, (t) => lerp(0.024, 0.016, t), () => hex('#32652c'));
+  const branch1Geo = makeTube(branch1Curve, 42, 8, (t) => lerp(0.024, 0.016, t), () => hex('#32642c'));
   const branch1Mesh = new THREE.Mesh(branch1Geo, stemMat);
   branch1Mesh.castShadow = true;
   lateralBranchesGroup.add(branch1Mesh);
@@ -1155,7 +1130,7 @@ try {
     new THREE.Vector3(-0.35, 2.78, 0.28),
     new THREE.Vector3(-0.48, 3.02, 0.24)
   ]);
-  const branch3Geo = makeTube(branch3Curve, 36, 8, (t) => lerp(0.02, 0.012, t), () => hex('#386d31'));
+  const branch3Geo = makeTube(branch3Curve, 36, 8, (t) => lerp(0.02, 0.012, t), () => hex('#376c30'));
   const branch3Mesh = new THREE.Mesh(branch3Geo, stemMat);
   branch3Mesh.castShadow = true;
   lateralBranchesGroup.add(branch3Mesh);
@@ -1224,11 +1199,11 @@ try {
   }
 
   // -----------------------------------------------------------
-  //  Pot, Soil & Atmospheric Motes
+  //  Pot, Soil & Floating Pollen Motes
   // -----------------------------------------------------------
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(160, 160),
-    new THREE.MeshStandardMaterial({ color: '#070f08', roughness: 0.98 })
+    new THREE.MeshStandardMaterial({ color: '#101d12', roughness: 0.96 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.06;
@@ -1237,7 +1212,7 @@ try {
 
   const pot = new THREE.Mesh(
     new THREE.CylinderGeometry(0.44, 0.32, 0.68, 48, 1, true),
-    new THREE.MeshStandardMaterial({ color: '#382e25', roughness: 0.78, side: THREE.DoubleSide })
+    new THREE.MeshStandardMaterial({ color: '#3d3228', roughness: 0.78, side: THREE.DoubleSide })
   );
   pot.position.set(0, -0.38, 0);
   pot.castShadow = true;
@@ -1246,7 +1221,7 @@ try {
 
   const potRim = new THREE.Mesh(
     new THREE.TorusGeometry(0.43, 0.045, 12, 48),
-    new THREE.MeshStandardMaterial({ color: '#544434', roughness: 0.68 })
+    new THREE.MeshStandardMaterial({ color: '#594838', roughness: 0.68 })
   );
   potRim.rotation.x = Math.PI / 2;
   potRim.position.y = -0.05;
@@ -1254,15 +1229,15 @@ try {
 
   const soil = new THREE.Mesh(
     new THREE.CircleGeometry(0.405, 48),
-    new THREE.MeshStandardMaterial({ color: '#181410', roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: '#1a1612', roughness: 1.0 })
   );
   soil.rotation.x = -Math.PI / 2;
   soil.position.y = -0.045;
   soil.receiveShadow = true;
   scene.add(soil);
 
-  // Atmospheric Pollen & Floating Motes
-  const moteCount = 110;
+  // Atmospheric Garden Motes
+  const moteCount = 100;
   const motePositions = new Float32Array(moteCount * 3);
   for (let i = 0; i < moteCount; i++) {
     motePositions[i * 3] = (Math.random() - 0.5) * 7;
@@ -1275,9 +1250,9 @@ try {
     moteGeo,
     new THREE.PointsMaterial({
       color: '#f6e4b8',
-      size: 0.02,
+      size: 0.018,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.38,
       depthWrite: false,
       blending: THREE.AdditiveBlending
     })
@@ -1294,7 +1269,6 @@ try {
     dewdropsVisible: true,
     plantMode: 'multi',
 
-    // Spring deflection
     tiltX: 0,
     tiltZ: 0,
     velX: 0,
@@ -1302,11 +1276,9 @@ try {
     kSpring: 38.0,
     kDamping: 4.2,
 
-    // Shake & impulse states
     shakeEnergy: 0,
     shakeFreq: 24.0,
 
-    // Drag interaction tracking
     isDraggingPlant: false,
     dragStartPointer: new THREE.Vector2()
   };
@@ -1367,7 +1339,7 @@ try {
       controls.enabled = true;
       physics.velX *= 1.8;
       physics.velZ *= 1.8;
-      showToast('Released: Elastic harmonic spring oscillation');
+      showToast('Released: Elastic spring oscillation');
     }
 
     // Direct Click Effect
@@ -1403,7 +1375,7 @@ try {
     const heroPos = new THREE.Vector3();
     heroFlower.headGroup.getWorldPosition(heroPos);
     triggerParticleBurst(heroPos, 45, 2.2);
-    showToast('🌪️ Rose shaken: physical elastic flutter!');
+    showToast('🌪️ Rose shaken: natural elastic response');
   }
 
   // -----------------------------------------------------------
@@ -1424,9 +1396,9 @@ try {
     } else {
       btnModeSingle.classList.add('active');
       btnModeMulti.classList.remove('active');
-      titleText.textContent = 'A Single Velvet Rose';
+      titleText.textContent = 'A Single Living Rose';
       lateralBranchesGroup.visible = false;
-      showToast('Focusing on single hero bloom (matching reference photo)');
+      showToast('Focusing on single hero bloom');
     }
   }
 
@@ -1472,7 +1444,7 @@ try {
       highlight: '#' + highCol.getHexString(),
       sheen: '#' + sheenCol.getHexString(),
       emissive: '#' + emissiveCol.getHexString(),
-      roughness: 0.38
+      roughness: 0.68
     };
     updateRoseColor(customPal);
   });
@@ -1571,6 +1543,7 @@ try {
 
   // -----------------------------------------------------------
   //  Animation & Real-Time Physics Loop
+  //  Subtle, smooth, frame-rate independent breeze movement
   // -----------------------------------------------------------
   const clock = new THREE.Clock();
   const tmpE = new THREE.Euler(), tmpQ = new THREE.Quaternion();
@@ -1585,7 +1558,7 @@ try {
     camera.position.lerp(targetCamPos, 0.06);
     controls.target.lerp(targetCamTarget, 0.06);
 
-    // Spring-Damper Simulation for Elastic Stem Wobble
+    // Spring-Damper Simulation for Elastic Stem Deflection
     const F_spring_x = -physics.kSpring * physics.tiltX;
     const F_spring_z = -physics.kSpring * physics.tiltZ;
     const F_damp_x = -physics.kDamping * physics.velX;
@@ -1602,61 +1575,61 @@ try {
     const shakeOffset = Math.sin(t * physics.shakeFreq) * physics.shakeEnergy * 0.08;
 
     // Gravity Sag Effect
-    const gravitySagX = (physics.gravity - 1.0) * 0.065;
-    const gravityDroop = (physics.gravity - 1.0) * 0.045;
+    const gravitySagX = (physics.gravity - 1.0) * 0.055;
+    const gravityDroop = (physics.gravity - 1.0) * 0.04;
 
-    // Aerodynamic Wind Simulation
+    // Natural Subtle Breeze: Low-frequency harmonic movement (main stem relatively stable)
     const w = physics.windSpeed;
-    const windTurbulence1 = Math.sin(t * 0.76) * 0.024 + Math.sin(t * 1.42 + 1.2) * 0.01;
-    const windTurbulence2 = Math.sin(t * 0.6) * 0.018 + Math.cos(t * 1.1) * 0.008;
+    const breezeSway1 = Math.sin(t * 0.65) * 0.016 + Math.sin(t * 1.25 + 1.1) * 0.007;
+    const breezeSway2 = Math.sin(t * 0.52) * 0.012 + Math.cos(t * 0.95) * 0.005;
 
-    plantMasterGroup.rotation.z = physics.tiltZ + w * windTurbulence1 + shakeOffset;
-    plantMasterGroup.rotation.x = physics.tiltX + w * windTurbulence2 + gravitySagX;
+    plantMasterGroup.rotation.z = physics.tiltZ + w * breezeSway1 + shakeOffset;
+    plantMasterGroup.rotation.x = physics.tiltX + w * breezeSway2 + gravitySagX;
 
-    // Flower heads nodding with bloom weight & wind
-    heroFlower.bloom.rotation.z = w * Math.sin(t * 0.95 + 0.6) * 0.016 + shakeOffset * 1.2;
-    heroFlower.bloom.rotation.x = w * Math.sin(t * 0.72) * 0.012 + gravityDroop;
+    // Flower heads nodding naturally with bloom weight & breeze
+    heroFlower.bloom.rotation.z = w * Math.sin(t * 0.82 + 0.5) * 0.012 + shakeOffset * 1.1;
+    heroFlower.bloom.rotation.x = w * Math.sin(t * 0.64) * 0.009 + gravityDroop;
 
-    flowerStage3.bloom.rotation.z = w * Math.sin(t * 1.1 + 1.2) * 0.02;
-    flowerStage2.bloom.rotation.z = w * Math.sin(t * 1.25 + 2.0) * 0.022;
-    flowerStage1.bloom.rotation.z = w * Math.sin(t * 1.4 + 2.8) * 0.024;
+    flowerStage3.bloom.rotation.z = w * Math.sin(t * 0.95 + 1.2) * 0.015;
+    flowerStage2.bloom.rotation.z = w * Math.sin(t * 1.1 + 1.8) * 0.018;
+    flowerStage1.bloom.rotation.z = w * Math.sin(t * 1.25 + 2.5) * 0.02;
 
-    // Petal Micro-Flutter
+    // Petal Micro-Flutter (subtle organic breathing)
     for (const { pivot } of allPetalNodes) {
       const d = pivot.userData;
-      const flutterAmp = d.amp * (1.0 + w * 0.8 + physics.shakeEnergy * 2.5);
+      const flutterAmp = d.amp * (1.0 + w * 0.7 + physics.shakeEnergy * 2.2);
       tmpE.set(
-        Math.sin(t * 1.2 + d.phase) * flutterAmp,
+        Math.sin(t * 1.1 + d.phase) * flutterAmp,
         0,
-        Math.sin(t * 1.5 + d.phase) * flutterAmp * 0.8
+        Math.sin(t * 1.35 + d.phase) * flutterAmp * 0.75
       );
       pivot.quaternion.copy(d.base).multiply(tmpQ.setFromEuler(tmpE));
     }
 
-    // Foliage Sway & Gravity Droop
+    // Foliage Gentle Breeze Sway & Gravity Sag
     for (const leaf of animatedLeaves) {
       const b = leaf.userData.base;
       const ph = leaf.userData.phase;
       const sp = leaf.userData.speed;
       leaf.rotation.set(
-        b.x + w * Math.sin(t * 0.92 * sp + ph) * 0.028 + gravityDroop * 0.5,
-        b.y + w * Math.sin(t * 0.74 * sp + ph) * 0.035,
-        b.z + w * Math.sin(t * 1.1 * sp + ph) * 0.05 + shakeOffset * 1.5
+        b.x + w * Math.sin(t * 0.82 * sp + ph) * 0.022 + gravityDroop * 0.5,
+        b.y + w * Math.sin(t * 0.68 * sp + ph) * 0.028,
+        b.z + w * Math.sin(t * 0.98 * sp + ph) * 0.038 + shakeOffset * 1.3
       );
     }
 
-    // Atmospheric Motes Motion
+    // Floating Atmospheric Motes
     const motesPos = motes.geometry.attributes.position;
     for (let i = 0; i < moteCount; i++) {
-      let mx = motesPos.getX(i) + w * 0.0028 + 0.0006;
-      let my = motesPos.getY(i) + 0.0012 * Math.sin(t * 0.8 + i);
+      let mx = motesPos.getX(i) + w * 0.0022 + 0.0005;
+      let my = motesPos.getY(i) + 0.001 * Math.sin(t * 0.7 + i);
       if (mx > 3.5) mx = -3.5;
       if (my > 5.2) my = 0;
       motesPos.setXYZ(i, mx, my, motesPos.getZ(i));
     }
     motesPos.needsUpdate = true;
 
-    // Particle System (Sparkle Splash / Falling Dewdrops)
+    // Splash Particles
     let activeParticles = 0;
     for (let i = 0; i < splashParticleCount; i++) {
       if (splashLifes[i] > 0) {
