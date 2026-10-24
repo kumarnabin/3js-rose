@@ -9,6 +9,8 @@ A complete Vite + Three.js scene that builds a botanically structured procedural
 - **Real petal shape** — narrow claw at the base, broad rounded tip with a small notch, cross-section wrap, lengthwise bend, hand-painted vein texture + bump map.
 - **Baked ambient occlusion** in vertex colours (deep inside the bloom is darker), plus real shadow-casting between petals.
 - **Calyx and hip** — swollen receptacle with five reflexed, tapering sepals (two fringed, as on real roses).
+- **Petal realism** — irregular hand-made outlines (no two petals alike), lopsided heart-shaped notch, layered edge ripples, rolled rims, and a paler, satin outer face versus the velvety inner face.
+- **Leaf realism** — ovate leaflets with drawn-out tips, forward-pointing serrations, curved lateral veins, glossy upper side and a paler matte underside, 7 leaflets on lower leaves and 5 higher up.
 - **Stem and foliage** — tapered, colour-graded stem; hooked, flattened prickles; compound leaves with five serrated, veined leaflets, rachis and stipules; younger leaves bronze-tinted; 2/5 leaf arrangement.
 - **Dew droplets** — transmissive glass drops on the upper petals.
 - **Image-based lighting** (RoomEnvironment) plus key, rim and fill lights.

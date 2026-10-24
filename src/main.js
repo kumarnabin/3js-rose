@@ -195,7 +195,7 @@ try {
       }
     }
     ctx.lineWidth = sub;
-    for (let i = 0; i < 260; i++) {
+    for (let i = 0; i < 700; i++) {
       const x = rr(0.04, 0.96) * w, y = rr(0.04, 0.96) * h;
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -216,6 +216,12 @@ try {
       ctx.fillStyle = rg; ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
     drawLeafVeins(ctx, w, h, 'rgba(150,185,100,0.5)', 7, 2.6, 0.8);
+    for (let i = 0; i < 16; i++) {                                   // tiny brown blemishes
+      const x = rr(0.15, 0.85) * w, y = rr(0.1, 0.9) * h, r = rr(3, 9);
+      const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, 'rgba(90,60,25,0.38)'); rg.addColorStop(1, 'rgba(90,60,25,0)');
+      ctx.fillStyle = rg; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
     // slightly redder, thinner margin as on young rose foliage
     const eg = ctx.createLinearGradient(0, 0, w, 0);
     eg.addColorStop(0, 'rgba(120,40,30,0.22)'); eg.addColorStop(0.1, 'rgba(120,40,30,0)');
@@ -239,7 +245,7 @@ try {
   const petalMat = new THREE.MeshPhysicalMaterial({
     map: petalMap,
     bumpMap: petalBump,
-    bumpScale: 0.8,
+    bumpScale: 1.1,
     vertexColors: true,
     roughness: 0.62,
     sheen: 0.8,
@@ -250,10 +256,15 @@ try {
     side: THREE.DoubleSide,
     envMapIntensity: 0.45
   });
+  petalMat.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>',
+      `#include <color_fragment>
+       if (!gl_FrontFacing) { diffuseColor.rgb = diffuseColor.rgb * 1.4 + vec3(0.05, 0.007, 0.018); }`);
+  };
   const leafMat = new THREE.MeshPhysicalMaterial({
     map: leafMap,
     bumpMap: leafBump,
-    bumpScale: 1.6,
+    bumpScale: 1.0,
     vertexColors: true,
     roughness: 0.5,
     clearcoat: 0.25,
@@ -263,6 +274,12 @@ try {
     envMapIntensity: 0.5,
     side: THREE.DoubleSide
   });
+  // underside of a leaf: paler, greyer, matte
+  leafMat.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>',
+      `#include <color_fragment>
+       if (!gl_FrontFacing) { diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.3, 0.14), 0.62); }`);
+  };
   const greenPlainMat = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.62, side: THREE.DoubleSide });
   const stemMat = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.55 });
   const prickleMat = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.5, side: THREE.DoubleSide });
@@ -383,7 +400,7 @@ try {
       halfWidth: (u) => size * 0.34 * Math.pow(1 - u, 0.9) + 0.002,
       section: (u, v, w) => [v * w, 0.16 * w * (1 - v * v) * (1 - u)],
       shiftX: (u) => -size * 0.55 * u * u,           // hooks downward
-      shade: (u) => mix(hex('#4a2c1e'), hex('#6a2820'), u)
+      shade: (u) => mix(hex('#3a2418'), hex('#55261c'), u)
     });
     return new THREE.Mesh(geo, prickleMat);
   }
@@ -394,7 +411,7 @@ try {
     const az = i * 2.4 + 0.5;
     const radial = new THREE.Vector3(Math.cos(az), 0, Math.sin(az));
     radial.addScaledVector(T, -radial.dot(T)).normalize();
-    const mesh = makePrickle(lerp(0.15, 0.08, t) * rr(0.85, 1.15));
+    const mesh = makePrickle(lerp(0.1, 0.055, t) * rr(0.85, 1.15));
     const r = lerp(0.052, 0.027, Math.pow(t, 0.8)) * 0.75;
     mesh.position.copy(P).addScaledVector(radial, r);
     const xAx = T.clone();                       // blade width runs along the stem axis
@@ -407,23 +424,31 @@ try {
   // ----- compound leaf (petiole + rachis + 5 serrated leaflets + stipules) -----
   const leafAnimated = [];
   function makeLeaflet(len, young) {
-    const W = len * 0.31;
+    const W = len * rr(0.3, 0.36);
     const tint = young
       ? [rr(1.22, 1.38), rr(0.86, 0.96), rr(0.8, 0.92)]    // bronze-red new growth
       : [rr(0.9, 1.05), rr(0.92, 1.08), rr(0.88, 1.0)];
+    const teeth = Math.round(len * 32);                       // serrations per side
+    const phase = [rr(0, 1), rr(0, 1)];
+    const asym = rr(-0.05, 0.05), twist = rr(-0.18, 0.18), droop = rr(0.35, 0.6), wavePh = rr(0, 6.28);
     const geo = makeBlade({
-      length: len, rows: 56, cols: 14,
+      length: len, rows: 112, cols: 16,
       halfWidth: (u) => {
-        const base = Math.pow(Math.sin(Math.PI * Math.pow(u, 0.78)), 0.72);
-        const saw = 1 - 0.07 + 0.07 * ((u * 14) % 1);                // serrated margin
-        return W * base * (u > 0.08 && u < 0.95 ? saw : 1);
+        // ovate blade, rounded base, drawn-out (acuminate) tip
+        const b = Math.pow(Math.sin(Math.PI * Math.pow(u, 0.8)), 0.7);
+        return W * b * (1 - 0.35 * smoothstep(0.78, 1, u));
       },
-      bend: (u) => 0.12 * Math.sin(u * 2.4) - 0.5 * Math.pow(u, 1.9),   // arch, then tip droops
-      section: (u, v, w) => {
-        const x = v * w;
-        const fold = Math.abs(x) * 0.42;                                // V-shaped fold along the midrib
-        const pucker = 0.006 * Math.sin(u * 30 + v * 2.4) * Math.abs(v) * Math.min(1, w * 12);
-        return [x, fold + pucker];
+      bend: (u) => 0.15 * Math.sin(u * 2.4) - droop * Math.pow(u, 1.9),   // arch, then tip droops
+      section: (u, v, w0) => {
+        const side = v < 0 ? 0 : 1;
+        const tt = (u * teeth + phase[side]) % 1;                          // forward-pointing saw teeth
+        const mask = smoothstep(0.78, 1, Math.abs(v)) * smoothstep(0.05, 0.15, u) * (1 - smoothstep(0.9, 0.98, u));
+        const sc = (1 + asym * (side ? 1 : -1)) * (1 - 0.055 * (1 - tt) * mask);
+        const x = v * w0 * sc;
+        const fold = Math.abs(x) * 0.26;                                    // V-shaped fold along the midrib
+        const pucker = 0.0028 * Math.sin(u * 75 + side * 1.3) * smoothstep(0.1, 0.5, Math.abs(v)) * Math.min(1, w0 * 10);   // blister between lateral veins
+        const wave = 0.0032 * Math.sin(u * 17 + wavePh) * smoothstep(0.6, 1, Math.abs(v));                                 // wavy margin
+        return [x, fold + pucker + wave + x * twist * u];
       },
       shade: (u, v) => {
         const ao = lerp(0.8, 1, smoothstep(0, 0.35, u)) * (1 - 0.1 * v * v);
@@ -435,7 +460,7 @@ try {
     return m;
   }
 
-  function makeCompoundLeaf(scale, young) {
+  function makeCompoundLeaf(scale, young, sevenLeaflets) {
     const g = new THREE.Group();
     const rachis = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 0),
@@ -449,7 +474,12 @@ try {
     rm.castShadow = true;
     g.add(rm);
 
-    const specs = [
+    const specs = sevenLeaflets ? [        // lower leaves carry 7 leaflets, upper ones 5
+      { t: 0.38, side: 1, len: 0.3 }, { t: 0.38, side: -1, len: 0.3 },
+      { t: 0.62, side: 1, len: 0.4 }, { t: 0.62, side: -1, len: 0.4 },
+      { t: 0.82, side: 1, len: 0.44 }, { t: 0.82, side: -1, len: 0.44 },
+      { t: 1.0, side: 0, len: 0.56 }
+    ] : [
       { t: 0.52, side: 1, len: 0.38 }, { t: 0.52, side: -1, len: 0.38 },
       { t: 0.77, side: 1, len: 0.44 }, { t: 0.77, side: -1, len: 0.44 },
       { t: 1.0, side: 0, len: 0.56 }
@@ -457,7 +487,7 @@ try {
     specs.forEach((sp) => {
       const P = rachis.getPointAt(sp.t);
       const T = rachis.getTangentAt(sp.t);
-      const yAx = T.clone().applyAxisAngle(UP, sp.side * 0.9).normalize();
+      const yAx = T.clone().applyAxisAngle(UP, sp.side * rr(0.75, 1.05)).normalize();
       // short petiolule between rachis and blade
       const base = P.clone().addScaledVector(yAx, 0.015).add(new THREE.Vector3(0, 0.005, 0));
       const zHint = UP.clone().addScaledVector(yAx, -UP.dot(yAx));
@@ -490,13 +520,13 @@ try {
   }
 
   const leafNodes = [
-    { t: 0.17, scale: 1.1 }, { t: 0.34, scale: 1.02 }, { t: 0.5, scale: 0.94 },
-    { t: 0.66, scale: 0.84 }, { t: 0.8, scale: 0.72 }
+    { t: 0.13, scale: 1.2 }, { t: 0.27, scale: 1.14 }, { t: 0.41, scale: 1.06 },
+    { t: 0.55, scale: 0.96 }, { t: 0.68, scale: 0.86 }, { t: 0.8, scale: 0.74 }
   ];
   leafNodes.forEach((n, i) => {
     const P = stemCurve.getPointAt(n.t);
     const az = i * 2.513 + 0.4;       // 144 deg: 2/5 phyllotaxis, as on real rose stems
-    const leaf = makeCompoundLeaf(n.scale, i >= 3);
+    const leaf = makeCompoundLeaf(n.scale, i >= 4, i < 3);
     leaf.position.copy(P).add(new THREE.Vector3(Math.cos(az), 0, Math.sin(az)).multiplyScalar(0.03));
     leaf.rotation.order = 'YZX';
     leaf.rotation.set(0, -az, 0.52 - i * 0.04);
@@ -581,31 +611,42 @@ try {
     const W = 0.15 + 0.27 * Math.pow(s, 0.85) * rr(0.94, 1.06);          // half-width
     const wrap = 3.5 - 2.55 * Math.pow(s, 0.62);                       // total cross-section wrap angle
     const bendTotal = lerp(0.7, -0.38, Math.pow(s, 0.8)) + rr(-0.06, 0.06);
-    const roll = lerp(0.0, 0.1, smoothstep(0.35, 1, s));                 // rim rolled back (outer petals)
-    const ripple = lerp(0.004, 0.022, s);
-    const rf = rr(9, 14), ph = rr(0, 6.28);
+    const roll = lerp(0.0, 0.14, smoothstep(0.3, 1, s));                 // rim rolled back (outer petals)
+    const ripple = lerp(0.005, 0.026, s);
+    const rf = rr(8, 13), ph = rr(0, 6.28);
+    const asym = rr(-0.09, 0.09);                                        // left/right petal never identical
+    const edgeAmp = lerp(0.025, 0.075, s);
+    const edgePh = [rr(0, 6.28), rr(0, 6.28), rr(0, 6.28), rr(0, 6.28)];
+    const tipSkew = rr(-0.035, 0.035);
     const inner = 1 - s;
-    const tint = [rr(0.93, 1.07), rr(0.88, 1.12), rr(0.88, 1.12)];
+    const tint = [rr(0.92, 1.08), rr(0.86, 1.12), rr(0.86, 1.12)];
     const geo = makeBlade({
-      length: L, rows: 44, cols: 28,
+      length: L, rows: 64, cols: 38,
       halfWidth: (u) => petalOutline(u) * W,
       bend: (u) => bendTotal * Math.pow(u, 1.45),
-      section: (u, v, w) => {
+      section: (u, v, w0) => {
+        const side = v < 0 ? 0 : 1;
+        // irregular, hand-made outline: two slow undulations per side + asymmetry
+        const body = smoothstep(0.12, 0.5, u) * (1 - smoothstep(0.92, 1, u));
+        const noise = 1 + edgeAmp * body * (Math.sin(u * 5.3 + edgePh[side * 2]) + 0.55 * Math.sin(u * 12.7 + edgePh[side * 2 + 1]));
+        const w = w0 * noise * (1 + asym * (side ? 1 : -1));
         const wr = wrap * (0.82 + 0.18 * smoothstep(0, 0.45, u));
         const a = (v * wr) / 2;
         const x = (w * Math.sin(a)) / (wr / 2);
         let zc = (w / (wr / 2)) * (1 - Math.cos(a));
-        const edge = Math.pow(Math.abs(v), 2.6);
-        zc += ripple * edge * smoothstep(0.3, 1, u) * Math.sin(u * rf + ph + v * 1.8);
-        zc -= roll * Math.pow(smoothstep(0.58, 1.0, u), 1.6) * (0.3 + 0.7 * Math.pow(Math.abs(v), 1.4));
+        const edge = Math.pow(Math.abs(v), 2.4);
+        zc += ripple * edge * smoothstep(0.25, 1, u) * (Math.sin(u * rf + ph + v * 1.8) + 0.6 * Math.sin(u * rf * 2.3 + ph * 1.7 - v * 2.6));
+        zc -= roll * Math.pow(smoothstep(0.55, 1.0, u), 1.6) * (0.3 + 0.7 * Math.pow(Math.abs(v), 1.4));
+        // faint longitudinal flutes, as real petals have
+        zc += 0.004 * Math.sin(v * 17 + ph) * smoothstep(0.2, 0.8, u);
         return [x, zc];
       },
-      yMod: (u, v) => -L * 0.045 * Math.pow(u, 9) * Math.exp(-v * v * 5),     // small notch in the tip
+      yMod: (u, v) => -L * 0.06 * Math.pow(u, 9) * Math.exp(-v * v * 5) + L * tipSkew * Math.pow(u, 6) * v,   // heart-shaped notch, slightly lopsided
       shade: (u, v) => {
         // baked ambient occlusion: deep inside the bloom and near the claw it is darker
         const depth = lerp(0.3, 0.9, 1 - inner * 0.9);
         const ao = lerp(depth * 0.55, 1, smoothstep(0.0, 0.85, u));
-        const edgeLift = 1 + 0.1 * Math.pow(Math.abs(v), 3) * smoothstep(0.4, 1, u);
+        const edgeLift = 1 + 0.12 * Math.pow(Math.abs(v), 3) * smoothstep(0.4, 1, u);
         const c = ao * edgeLift;
         return [c * tint[0], c * tint[1], c * tint[2]];
       }
@@ -650,8 +691,8 @@ try {
     while (placed.length < 15 && attempts++ < 900) {
       const node = petalNodes[Math.floor(rr(petalNodes.length * 0.55, petalNodes.length))];
       const pos = node.mesh.geometry.attributes.position, nor = node.mesh.geometry.attributes.normal;
-      const row = Math.floor(rr(14, 36)), col = Math.floor(rr(8, 20));
-      const idx = row * 29 + col;
+      const row = Math.floor(rr(20, 52)), col = Math.floor(rr(10, 28));
+      const idx = row * 39 + col;
       n.fromBufferAttribute(nor, idx);
       p.fromBufferAttribute(pos, idx);
       node.mesh.getWorldQuaternion(wq);
