@@ -3,130 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a120b" />
-    <title>Realistic 3D Rose — Living Botanical Study</title>
+    <meta name="theme-color" content="#111810" />
+    <title>Rose — a living study</title>
   </head>
   <body>
     <div id="app">
-      <div class="loading">
-        <span class="loading-dot"></span>
-        <span class="loading-text">Nurturing your botanical study…</span>
+      <div class="loading"><span class="loading-dot"></span> Growing your rose…</div>
+      <div class="top-card">
+        <div class="eyebrow">BOTANICAL STUDY · 002</div>
+        <h1>A rose, in the breeze.</h1>
+        <p>Procedural 3D · Real-time light · Living motion</p>
       </div>
-
-      <!-- Header Card -->
-      <header class="top-card">
-        <div class="eyebrow">HYBRID TEA ROSE · PROCEDURAL BOTANY</div>
-        <h1 id="title-text">A Living Rose</h1>
-        <p>Interactive 3D · Velvet Shading · Physical Wind & Gravity</p>
-      </header>
-
-      <!-- Plant Mode Switcher -->
-      <nav class="mode-bar" aria-label="Plant Display Mode">
-        <button id="mode-multi" class="mode-btn active" type="button" title="View plant with all 4 blooming stages simultaneously">
-          🌿 Bush: All Stages
-        </button>
-        <button id="mode-single" class="mode-btn" type="button" title="Focus on single hero bloom matching study reference">
-          🌹 Single Rose
-        </button>
-      </nav>
-
-      <!-- Floating Controls Panel -->
-      <aside class="panel-container" id="control-panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <span class="live-dot"></span>
-            <span>BOTANICAL CONTROLS</span>
-          </div>
-          <button id="panel-toggle" class="icon-btn" type="button" title="Collapse / Expand Controls" aria-expanded="true">
-            —
-          </button>
-        </div>
-
-        <div class="panel-body">
-          <!-- Color Section -->
-          <div class="control-group">
-            <label class="group-label">Rose Color Palette</label>
-            <div class="color-palette" id="color-palette">
-              <button class="color-chip active" data-color="crimson" style="--c: #9e0a24" title="Velvet Crimson (Classic Reference)"></button>
-              <button class="color-chip" data-color="burgundy" style="--c: #4a0311" title="Royal Burgundy / Black Baccara"></button>
-              <button class="color-chip" data-color="pink" style="--c: #d85c7b" title="Blush Pink"></button>
-              <button class="color-chip" data-color="ivory" style="--c: #f4eee1" title="Pure Ivory"></button>
-              <button class="color-chip" data-color="peach" style="--c: #f07054" title="Sunset Coral / Peach"></button>
-              <button class="color-chip" data-color="yellow" style="--c: #e5a415" title="Golden Sun"></button>
-              <button class="color-chip" data-color="lavender" style="--c: #8f53b8" title="Royal Lilac"></button>
-              <button class="color-chip" data-color="black" style="--c: #1c141a" title="Midnight Obsidian"></button>
-              <label class="custom-color-wrapper" title="Custom Petal Color Picker">
-                <input type="color" id="custom-color-input" value="#9e0a24" />
-                <span class="custom-color-icon">🎨</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Wind Speed Slider -->
-          <div class="control-group">
-            <div class="slider-header">
-              <label for="wind-slider">Wind Speed</label>
-              <span id="wind-val" class="slider-badge">1.0 · Gentle breeze</span>
-            </div>
-            <input type="range" id="wind-slider" min="0" max="4" step="0.1" value="1.0" />
-          </div>
-
-          <!-- Gravity Slider -->
-          <div class="control-group">
-            <div class="slider-header">
-              <label for="gravity-slider">Gravity Effect</label>
-              <span id="gravity-val" class="slider-badge">1.0g · Earth</span>
-            </div>
-            <input type="range" id="gravity-slider" min="0" max="2.5" step="0.1" value="1.0" />
-            <div class="slider-ticks">
-              <span data-val="0">0g (Float)</span>
-              <span data-val="1">1g (Earth)</span>
-              <span data-val="2.5">2.5g (Heavy)</span>
-            </div>
-          </div>
-
-          <!-- Bloom Stage (Unfurl) Slider -->
-          <div class="control-group">
-            <div class="slider-header">
-              <label for="bloom-slider">Bloom Stage (Unfurl)</label>
-              <span id="bloom-val" class="slider-badge">100% · Full Bloom</span>
-            </div>
-            <input type="range" id="bloom-slider" min="0.1" max="1.0" step="0.02" value="1.0" />
-          </div>
-
-          <!-- Physics & Interaction Action Buttons -->
-          <div class="action-buttons">
-            <button id="btn-shake" type="button" class="action-btn shake-btn" title="Shake the plant vigorously to trigger elastic vibration and dewdrop scatter">
-              🫨 Shake Plant
-            </button>
-            <button id="btn-dew" type="button" class="action-btn active" title="Toggle sparkling morning dew droplets">
-              💧 Dewdrops: On
-            </button>
-          </div>
-
-          <!-- Camera Views -->
-          <div class="control-group">
-            <label class="group-label">Camera Perspectives</label>
-            <div class="cam-buttons">
-              <button class="cam-btn active" data-view="hero" type="button">Hero Angle</button>
-              <button class="cam-btn" data-view="closeup" type="button">Petal Detail</button>
-              <button class="cam-btn" data-view="top" type="button">Top Down</button>
-              <button class="cam-btn" data-view="full" type="button">Full Plant</button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Bottom Interactive Hint & Status -->
-      <footer class="bottom-card">
-        <span class="live-dot pulse"></span>
-        <span id="status-desc">Click &amp; drag plant to pull &amp; spring-back · Click petals to pluck · Scroll to zoom</span>
-      </footer>
-
-      <!-- Interaction Mode Indicator Toast -->
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-      <!-- WebGL Error Alert -->
+      <div class="bottom-card">
+        <span class="live-dot"></span><span>LIVE SCENE</span>
+        <span class="separator">/</span><span id="wind-label">Gentle breeze</span>
+      </div>
+      <div class="controls">
+        <button id="wind-toggle" type="button" aria-pressed="true">Ⅱ &nbsp; Pause breeze</button>
+        <button id="reset-view" type="button">↺ &nbsp; Reset view</button>
+      </div>
+      <div class="hint">Drag to orbit <span>·</span> Scroll to zoom</div>
       <div id="error" role="alert"></div>
     </div>
     <script type="module" src="/src/main.js"></script>
