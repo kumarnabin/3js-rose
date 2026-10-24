@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111810" />
+    <title>Rose — a living study</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="loading"><span class="loading-dot"></span> Growing your rose…</div>
+      <div class="top-card">
+        <div class="eyebrow">BOTANICAL STUDY · 002</div>
+        <h1>A rose, in the breeze.</h1>
+        <p>Procedural 3D · Real-time light · Living motion</p>
+      </div>
+      <div class="bottom-card">
+        <span class="live-dot"></span><span>LIVE SCENE</span>
+        <span class="separator">/</span><span id="wind-label">Gentle breeze</span>
+      </div>
+      <div class="controls">
+        <button id="wind-toggle" type="button" aria-pressed="true">Ⅱ &nbsp; Pause breeze</button>
+        <button id="reset-view" type="button">↺ &nbsp; Reset view</button>
+      </div>
+      <div class="hint">Drag to orbit <span>·</span> Scroll to zoom</div>
+      <div id="error" role="alert"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
