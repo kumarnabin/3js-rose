@@ -11,7 +11,8 @@
 html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; }
 body { min-width: 320px; }
 #app { position: relative; isolation: isolate; background: radial-gradient(ellipse at 52% 46%, #e7ecda 0%, #c9d2bd 45%, #a9b69b 100%); }
-canvas { display: block; width: 100%; height: 100%; outline: none; }
+canvas { display: block; width: 100%; height: 100%; outline: none; transition: opacity .45s ease; }
+canvas.is-fading { opacity: 0; }
 .top-card {
   position: absolute; top: clamp(22px, 5vw, 54px); left: clamp(20px, 5vw, 64px);
   pointer-events: none; max-width: min(470px, calc(100% - 40px));
@@ -20,6 +21,9 @@ canvas { display: block; width: 100%; height: 100%; outline: none; }
 .eyebrow { font-size: 10px; letter-spacing: .22em; color: #45543b; font-weight: 600; }
 h1 { margin: 12px 0 8px; font: 400 clamp(34px, 5vw, 62px)/1.05 'Playfair Display', Georgia, serif; letter-spacing: -.035em; color: #192417; }
 .top-card p { margin: 0; color: #33412d; font-size: 12px; letter-spacing: .025em; }
+.study-link { pointer-events: auto; display: inline-block; margin-top: 14px; color: #192417; font-size: 12px; text-decoration: none; border-bottom: 1px solid #19241755; }
+.study-link:hover { border-bottom-color: #192417; }
+.study-link:focus-visible { outline: 2px solid #192417; outline-offset: 3px; }
 .bottom-card {
   position: absolute; left: clamp(20px, 5vw, 64px); bottom: clamp(22px, 4vw, 42px);
   display: flex; align-items: center; gap: 10px; color: #e3e8da; font-size: 10px; letter-spacing: .12em;
@@ -41,11 +45,15 @@ button:focus-visible { outline: 2px solid #d5e8b4; outline-offset: 3px; }
 .loading { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center; gap: 10px; background: #c9d2bd; color: #2c3926; font-size: 12px; letter-spacing: .08em; transition: opacity .8s; }
 .loading.done { opacity: 0; pointer-events: none; }
 #error { position: absolute; left: 20px; right: 20px; top: 50%; text-align: center; color: #ffd6cf; font-size: 13px; display: none; }
+@media (prefers-reduced-motion: reduce) {
+  canvas, button, .loading { transition: none; }
+  button:hover { transform: none; }
+}
 @media (max-width: 600px) {
   .top-card { top: 25px; }
   .top-card p { max-width: 250px; line-height: 1.6; }
-  .hint { top: auto; bottom: 82px; right: 20px; }
-  .controls { bottom: 20px; left: 20px; right: 20px; justify-content: flex-end; }
+  .hint { top: auto; bottom: 170px; right: 20px; }
+  .controls { bottom: 20px; left: 20px; right: 20px; display: grid; grid-template-columns: 1fr 1fr; }
   button { padding: 11px 12px; font-size: 10px; }
-  .bottom-card { bottom: 75px; }
+  .bottom-card { bottom: 118px; }
 }

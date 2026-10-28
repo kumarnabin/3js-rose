@@ -52,19 +52,50 @@ All in `src/main.js`: `PETALS` (count), `phi` (how open each petal is), `wrap` /
 
 - Drag: orbit around the flower
 - Mouse wheel / trackpad: zoom
-- **Pause breeze**: stop the plant and petal motion
-- **Reset view**: restore the initial camera angle
+- **Replay lifecycle**: start again from the seedling
+- **Pause lifecycle**: hold the current stage
+- **Pause breeze**: the wind eases out and the plant settles
+- **Reset view**: glide back to the initial camera angle
+
+The breeze is a smooth, gusting wind field (shared with the lily page). The stem bends from the soil like a real stem rather than rotating as a block, and the head and each leaf respond through their own damped springs. When the bloom is over, petals peel away from the outside in, drift downwind and settle on the soil and ground. Then the scene fades and the cycle restarts. Visitors who prefer reduced motion see a still, open bloom, and the buttons let them start the motion.
+
+## Lily lifecycle page (`/flower-lifecycle`)
+
+A second study: a procedural pink lily that moves through five stages (bud, opening, bloom, wilting, seeds) in an adjustable breeze. Open `http://localhost:5173/flower-lifecycle` (or follow the link on the rose page).
+
+- **Lifecycle**: stage cards, play/pause, previous/next, restart, speed (0.5×–3×), loop, and a scrubbable timeline. Every pose is a pure function of one value `t` (0–4), so stages can be visited in any order. The seed stage shows the ovary swelling into a three-valved capsule that dries, splits and sheds flat papery seeds.
+- **Wind**: on/off, Calm / Gentle / Strong presets, intensity, gusts and direction. The stem bends from its anchored base, and leaves and petals respond through their own damped springs with tip flutter.
+- **Appearance**: daylight or warm sunset lighting, three backdrops, four petal palettes, petal colour variation, optional pollen motes or drifting petals, and Low / Medium / High quality (the default is picked from the device and stepped down automatically if frames stay slow).
+- **Keyboard**: Space plays/pauses, ←/→ change stage. Reduced-motion users start on a still bloom with the wind off. A message replaces the scene if WebGL 2 is unavailable.
+- **URL options**: `?stage=bud|opening|bloom|wilting|seeds`, `?t=0..4`, `?paused`, `?still`, `?wind=calm|gentle|strong`, `?light=daylight|sunset`, `?bg=garden|mist|night`, `?palette=stargazer|blush|magenta|coral`, `?particles=none|pollen|petals`, `?quality=low|medium|high`, `?speed=0.5..3`.
+
+The page is a second Vite entry (`flower-lifecycle/index.html`, registered in `vite.config.js`), and its code lives in `src/flower-lifecycle/`. When deploying `dist/`, serve `flower-lifecycle/index.html` for `/flower-lifecycle`. Most static hosts do this by redirecting to the trailing-slash URL, and `vite.config.js` does the same for `npm run dev` and `npm run preview`.
 
 ## Project structure
 
 ```text
 threejs-realistic-rose/
-├── index.html
+├── index.html                      # rose study (/)
+├── flower-lifecycle/index.html     # lily lifecycle (/flower-lifecycle/)
+├── vite.config.js                  # registers both pages
 ├── package.json
 ├── README.md
 └── src/
-    ├── main.js
-    └── style.css
+    ├── main.js                     # rose
+    ├── style.css
+    └── flower-lifecycle/
+        ├── main.js                 # page bootstrap: renderer, camera, loop, thumbnails
+        ├── lifecycle.js            # stages, computePose(t), playback controller
+        ├── wind.js                 # wind presets and gusting wind field
+        ├── environment.js          # lighting presets, backdrop, ground, grass, particles
+        ├── textures.js             # procedural canvas textures and palettes
+        ├── ui.js                   # control panels and timeline bindings
+        ├── utils.js                # seeded random, easing, noise, springs
+        ├── flower-lifecycle.css
+        └── lily/
+            ├── Lily.js             # stem spine, leaves, tepals, stamens, capsule, seeds
+            ├── geometry.js         # deformable grid and tube geometry
+            └── materials.js        # shared materials with lifecycle colour shaders
 ```
 
 ## Performance

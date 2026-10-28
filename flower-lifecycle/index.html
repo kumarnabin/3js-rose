@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c120e" />
+    <meta name="description" content="A procedural 3D lily that grows from bud to bloom to seed, swaying in an adjustable breeze." />
+    <title>Lily — lifecycle &amp; wind</title>
+  </head>
+  <body>
+    <div id="fl-app" class="fl-app">
+      <div class="fl-stage" id="fl-stage"></div>
+      <div class="fl-loading" role="status"><span class="fl-dot"></span><span>Growing your lily…</span></div>
+
+      <header class="fl-intro">
+        <a class="fl-back" href="../">← Rose study</a>
+        <p class="fl-eyebrow">Botanical study · 003</p>
+        <h1>Realistic Flower with Animation Lifecycle &amp; Wind Effect</h1>
+        <p class="fl-lede">A living, breathing lily — from bud to bloom to seed, with natural wind movement.</p>
+      </header>
+
+      <div class="fl-side">
+        <details class="fl-panel" id="wind-panel" open>
+          <summary>
+            <svg class="fl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7" /></svg>
+            <span class="fl-summary-text"><span class="fl-panel-title">Wind effect</span><span class="fl-panel-sub" id="wind-summary">Gentle breeze</span></span>
+          </summary>
+          <div class="fl-panel-body">
+            <div class="fl-row">
+              <span id="wind-toggle-label">Wind</span>
+              <button type="button" class="fl-switch" id="wind-toggle" role="switch" aria-checked="true" aria-labelledby="wind-toggle-label"><span></span></button>
+            </div>
+            <fieldset class="fl-segmented" id="wind-presets">
+              <legend>Preset</legend>
+              <label><input type="radio" name="wind-preset" value="calm" /><span>Calm</span></label>
+              <label><input type="radio" name="wind-preset" value="gentle" checked /><span>Gentle</span></label>
+              <label><input type="radio" name="wind-preset" value="strong" /><span>Strong</span></label>
+            </fieldset>
+            <label class="fl-range"><span>Intensity <output id="wind-strength-out">40%</output></span>
+              <input type="range" id="wind-strength" min="0" max="100" value="40" /></label>
+            <label class="fl-range"><span>Gusts <output id="wind-gust-out">35%</output></span>
+              <input type="range" id="wind-gust" min="0" max="100" value="35" /></label>
+            <div class="fl-direction">
+              <label class="fl-range"><span>Direction <output id="wind-direction-out">20°</output></span>
+                <input type="range" id="wind-direction" min="0" max="359" value="20" /></label>
+              <svg class="fl-compass" viewBox="0 0 40 40" aria-hidden="true">
+                <circle cx="20" cy="20" r="18" />
+                <text x="20" y="8.5">far</text>
+                <g id="wind-arrow"><path d="M9 20h20m-5-5 5 5-5 5" /></g>
+              </svg>
+            </div>
+            <p class="fl-note" id="motion-note" hidden>Reduced motion is on: playback and wind start paused.</p>
+          </div>
+        </details>
+
+        <details class="fl-panel" id="look-panel">
+          <summary>
+            <svg class="fl-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" /></svg>
+            <span class="fl-summary-text"><span class="fl-panel-title">Appearance</span><span class="fl-panel-sub" id="look-summary">Warm sunset · Garden</span></span>
+          </summary>
+          <div class="fl-panel-body">
+            <fieldset class="fl-segmented" id="lighting">
+              <legend>Lighting</legend>
+              <label><input type="radio" name="lighting" value="daylight" /><span>Daylight</span></label>
+              <label><input type="radio" name="lighting" value="sunset" checked /><span>Sunset</span></label>
+            </fieldset>
+            <label class="fl-select"><span>Background</span>
+              <select id="background">
+                <option value="garden">Garden bokeh</option>
+                <option value="mist">Morning mist</option>
+                <option value="night">Night studio</option>
+              </select></label>
+            <label class="fl-select"><span>Petal colour</span>
+              <select id="palette">
+                <option value="stargazer">Stargazer pink</option>
+                <option value="blush">Blush white</option>
+                <option value="magenta">Deep magenta</option>
+                <option value="coral">Coral sunset</option>
+              </select></label>
+            <label class="fl-range"><span>Colour variation <output id="variation-out">35%</output></span>
+              <input type="range" id="variation" min="0" max="100" value="35" /></label>
+            <label class="fl-select"><span>Particles</span>
+              <select id="particles">
+                <option value="none">None</option>
+                <option value="pollen" selected>Pollen motes</option>
+                <option value="petals">Drifting petals</option>
+              </select></label>
+            <fieldset class="fl-segmented" id="quality">
+              <legend>Quality <span class="fl-legend-note" id="quality-note"></span></legend>
+              <label><input type="radio" name="quality" value="low" /><span>Low</span></label>
+              <label><input type="radio" name="quality" value="medium" /><span>Medium</span></label>
+              <label><input type="radio" name="quality" value="high" checked /><span>High</span></label>
+            </fieldset>
+            <button type="button" class="fl-button fl-wide" id="reset-camera">↺ Reset camera</button>
+          </div>
+        </details>
+        <p class="fl-hint" aria-hidden="true">Drag to orbit · Scroll to zoom · Space · ← →</p>
+      </div>
+
+      <section class="fl-timeline" aria-labelledby="timeline-title">
+        <h2 id="timeline-title" class="fl-visually-hidden">Lifecycle</h2>
+        <div class="fl-transport">
+          <button type="button" class="fl-button fl-icon-button" id="prev-stage" aria-label="Previous stage" title="Previous stage (←)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M19 5 9 12l10 7z" /></svg></button>
+          <button type="button" class="fl-button fl-icon-button fl-play" id="play" aria-label="Pause" aria-pressed="true" title="Play / pause (Space)">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="fl-pause-icon"><path d="M8 5v14M16 5v14" /></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="fl-play-icon"><path d="M7 5l12 7-12 7z" /></svg></button>
+          <button type="button" class="fl-button fl-icon-button" id="next-stage" aria-label="Next stage" title="Next stage (→)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14M5 5l10 7-10 7z" /></svg></button>
+          <button type="button" class="fl-button fl-icon-button" id="restart" aria-label="Restart lifecycle" title="Restart">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4" /></svg></button>
+          <label class="fl-inline-select"><span class="fl-visually-hidden">Playback speed</span>
+            <select id="speed" title="Playback speed">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2×</option>
+              <option value="3">3×</option>
+            </select></label>
+          <button type="button" class="fl-button fl-toggle" id="loop" aria-pressed="true">Loop</button>
+          <label class="fl-scrub">
+            <span class="fl-visually-hidden">Lifecycle position</span>
+            <input type="range" id="scrub" min="0" max="1000" value="0" step="1" />
+            <span class="fl-scrub-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+          </label>
+        </div>
+        <ol class="fl-stages" id="stages"></ol>
+      </section>
+
+      <div class="fl-visually-hidden" aria-live="polite" id="announcer"></div>
+      <div class="fl-fallback" id="fallback" hidden>
+        <h2>3D isn't available here</h2>
+        <p id="fallback-reason">This page needs WebGL. Try enabling hardware acceleration or another browser.</p>
+        <a class="fl-button" href="../">Back to the rose study</a>
+      </div>
+    </div>
+    <script type="module" src="/src/flower-lifecycle/main.js"></script>
+  </body>
+</html>
